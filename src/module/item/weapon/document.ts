@@ -229,6 +229,8 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
         if (this.system.grade && usage.type === "installed" && usage.value in WEAPON_UPGRADES) {
             return true;
         }
+        if (usage.type === "affixed" && usage.where.includes("weapon"))
+            return true;
 
         return false;
     }

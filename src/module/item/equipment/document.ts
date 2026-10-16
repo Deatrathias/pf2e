@@ -12,7 +12,7 @@ class EquipmentPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends
 
     /** Whether the item has an attached (or affixed, applied, etc.) usage */
     override get isAttachable(): boolean {
-        return this.system.usage.type === "installed";
+        return this.system.usage.type === "installed" || (this.system.usage.type === "affixed" && "spellheart" in this.system.traits.value);
     }
 
     override async getChatData(

@@ -24,6 +24,10 @@ class ConsumablePF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extend
         return CONFIG.PF2E.consumableTraits;
     }
 
+    override get isAttachable(): boolean {
+        return this.system.usage.type === "affixed" && "talisman" in this.system.traits.value;
+    }
+
     get otherTags(): Set<OtherConsumableTag> {
         return new Set(this.system.traits.otherTags);
     }

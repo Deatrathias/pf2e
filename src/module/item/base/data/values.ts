@@ -22,6 +22,7 @@ class MystifiedTraits {
 
 const ITEM_CARRY_TYPES = Object.freeze([
     "attached",
+    "affixed",
     "dropped",
     "held",
     "implanted",

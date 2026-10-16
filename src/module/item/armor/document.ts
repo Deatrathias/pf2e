@@ -84,6 +84,8 @@ class ArmorPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Phy
         if (this.system.grade && usage.type === "installed" && usage.value in ARMOR_UPGRADES) {
             return true;
         }
+        if (usage.type === "affixed" && usage.where.includes("armor"))
+            return true;
 
         return false;
     }

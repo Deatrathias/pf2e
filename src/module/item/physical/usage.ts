@@ -21,6 +21,13 @@ interface AttachedUsage {
     hands?: 0;
 }
 
+interface AffixedUsage {
+    value: string;
+    type: "affixed";
+    where: string;
+    hands?: 0;
+}
+
 interface InstalledUsage {
     value: string;
     type: "installed";
@@ -42,7 +49,7 @@ interface ImplantedUsage {
     hands?: 0;
 }
 
-type UsageDetails = HeldUsage | WornUsage | AttachedUsage | InstalledUsage | CarriedUsage | ImplantedUsage;
+type UsageDetails = HeldUsage | WornUsage | AttachedUsage | InstalledUsage | CarriedUsage | ImplantedUsage | AffixedUsage;
 
 type UsageType = UsageDetails["type"];
 
@@ -69,6 +76,11 @@ function getUsageDetails(usage: string): UsageDetails {
     if (usage.startsWith("installed-in")) {
         const where = usage.replace(/^installed-in-/, "");
         return { value: usage, type: "installed", where };
+    }
+
+    if (usage.startsWith("affixed-to")) {
+        const where = usage.replace(/^affixed-to-/, "");
+        return { value: usage, type: "affixed", where };
     }
 
     switch (usage) {
