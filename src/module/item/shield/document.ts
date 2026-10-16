@@ -70,12 +70,17 @@ class ShieldPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
     }
 
     override acceptsSubitem(candidate: PhysicalItemPF2e): boolean {
-        return (
-            candidate.isOfType("weapon") &&
+        if (candidate.isOfType("weapon") &&
             candidate.system.traits.value.some((t) => t === "attached-to-shield") &&
             !this.system.traits.integrated &&
-            !this.subitems.some((i) => i.isOfType("weapon"))
-        );
+            !this.subitems.some((i) => i.isOfType("weapon")))
+            return true;
+        
+        const usage = candidate.system.usage;
+        if (usage.type === "affixed" && usage.where.includes("shield"))
+            return true;
+
+        return false;
     }
 
     /** Generate a list of strings for use in predication */

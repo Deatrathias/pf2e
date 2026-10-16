@@ -237,8 +237,16 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
         if (this.system.grade && usage.type === "installed" && usage.value in WEAPON_UPGRADES) {
             return true;
         }
-        if (usage.type === "affixed" && usage.where.includes("weapon"))
-            return true;
+        if (usage.type === "affixed") {
+            if (usage.where.includes("weapon"))
+                return true;
+
+            if (usage.where.includes("firearm") && this.group === "firearm")
+                return true;
+
+            if (usage.where.includes("crossbow") && this.group === "crossbow")
+                return true;
+        }
 
         return false;
     }
