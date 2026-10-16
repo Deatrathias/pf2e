@@ -2,7 +2,7 @@ import type { ActorType, CharacterPF2e } from "@actor";
 import { CharacterAttack } from "@actor/character/data.ts";
 import { SENSE_TYPES } from "@actor/creature/values.ts";
 import { ActorInitiative } from "@actor/initiative.ts";
-import { DamageDicePF2e, Modifier, StatisticModifier } from "@actor/modifiers.ts";
+import { DamageDicePF2e, Modifier } from "@actor/modifiers.ts";
 import { MOVEMENT_TYPES } from "@actor/values.ts";
 import { WeaponPF2e } from "@item";
 import { RollNotePF2e } from "@module/notes.ts";
@@ -11,6 +11,7 @@ import { RecordField } from "@system/schema-data-fields.ts";
 import { LandSpeedStatisticTraceData, SpeedStatistic } from "@system/statistic/speed.ts";
 import { objectHasKey, setHasElement, sluggify, tupleHasValue } from "@util";
 import * as R from "remeda";
+import { isSharedStatisticModifier, suppressUnsharedModifiers, useFixedStatisticModifier } from "../../helpers.ts";
 import { RuleElement } from "../base.ts";
 import { CreatureSizeRuleElement } from "../creature-size.ts";
 import { ModelPropsFromRESchema, ResolvableValueField, RuleElementSource } from "../data.ts";
@@ -223,9 +224,15 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
         const acOverride = Number(this.resolveValue(overrides.armorClass.modifier, armorClass.value)) || 0;
         if (!acOverride) return;
 
-        if (overrides.armorClass.ownIfHigher && armorClass.value > acOverride) return;
+        const useForm = useFixedStatisticModifier({
+            fixed: acOverride,
+            own: armorClass.value,
+            modifiers: armorClass.modifiers,
+            ownIfHigher: overrides.armorClass.ownIfHigher,
+        });
+        if (!useForm) return;
 
-        this.#suppressModifiers(armorClass);
+        suppressUnsharedModifiers(armorClass);
         const newModifier = (Number(this.resolveValue(overrides.armorClass.modifier)) || 0) - 10;
         armorClass.modifiers.push(new Modifier(this.modifierLabel, newModifier, "untyped"));
         actor.system.attributes.ac = fu.mergeObject(actor.system.attributes.ac, armorClass.parent.getTraceData());
@@ -261,9 +268,13 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
 
             const currentSkill = actor.skills[key];
             const newModifier = Number(this.resolveValue(newSkill.modifier)) || 0;
-            if (currentSkill.mod > newModifier && newSkill.ownIfHigher) {
-                continue;
-            }
+            const useForm = useFixedStatisticModifier({
+                fixed: newModifier,
+                own: currentSkill.mod,
+                modifiers: currentSkill.check.modifiers,
+                ownIfHigher: newSkill.ownIfHigher,
+            });
+            if (!useForm) continue;
 
             const baseMod = new Modifier({
                 label: this.modifierLabel,
@@ -272,7 +283,7 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
                 type: "untyped",
             });
 
-            actor.skills[key] = currentSkill.extend({ modifiers: [baseMod], filter: this.#filterModifier });
+            actor.skills[key] = currentSkill.extend({ modifiers: [baseMod], filter: isSharedStatisticModifier });
             actor.system.skills[key] = fu.mergeObject(actor.system.skills[key], actor.skills[key].getTraceData());
         }
     }
@@ -301,6 +312,8 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
             range: strikeData.range,
             traits: strikeData.traits ?? [],
             ability: strikeData.ability,
+            traitToggles: strikeData.traitToggles,
+            handsHeld: strikeData.handsHeld,
             battleForm: true,
         }));
 
@@ -327,7 +340,9 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
 
             for (const datum of ruleData) {
                 if (!datum.traits.includes("magical")) datum.traits.push("magical");
-                new StrikeRuleElement(datum, { parent: this.item }).beforePrepareData();
+                // Pass this rule's source index so that toggle and grip selections can be persisted
+                const sourceIndex = this.sourceIndex ?? undefined;
+                new StrikeRuleElement(datum, { parent: this.item, sourceIndex }).beforePrepareData();
             }
         }
 
@@ -339,14 +354,15 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
         for (const action of strikeActions) {
             const strike = strikes[action.slug ?? ""];
             if (!strike || action.type !== "strike") continue;
-            const addend = action.modifiers
-                .filter((m) => m.enabled && this.#filterModifier(m))
-                .reduce((sum, m) => sum + m.modifier, 0);
-            const formModifier = Number(this.resolveValue(strike.modifier)) + addend;
-            if (!this.ownUnarmed && (formModifier >= action.totalModifier || !strike.ownIfHigher)) {
-                // The battle form's static attack-roll modifier is >= the character's unarmed attack modifier:
-                // replace inapplicable attack-roll modifiers with the battle form's
-                this.#suppressModifiers(action);
+            const useForm = useFixedStatisticModifier({
+                fixed: Number(this.resolveValue(strike.modifier)),
+                own: action.totalModifier,
+                modifiers: action.modifiers,
+                ownIfHigher: !!strike.ownIfHigher,
+            });
+            if (!this.ownUnarmed && useForm) {
+                // Replace inapplicable attack-roll modifiers with the battle form's
+                suppressUnsharedModifiers(action);
                 this.#suppressNotes(
                     Object.entries(synthetics.rollNotes).flatMap(([key, note]) => (/\bdamage\b/.test(key) ? note : [])),
                 );
@@ -375,38 +391,32 @@ class BattleFormRuleElement extends RuleElement<BattleFormRuleSchema> {
         }
     }
 
-    /** Add, replace and/or adjust non-land speeds */
+    /** Add, remove, replace and/or adjust speeds. Unless no speeds are present, unmentioned movement types are removed. */
     #prepareSpeeds(): void {
         const actor = this.actor;
+        const speeds = this.overrides.speeds;
+        if (R.isEmpty(speeds)) return;
+
         for (const type of MOVEMENT_TYPES) {
-            const speedOverride = this.resolveValue(this.overrides.speeds[type], null);
-            if (typeof speedOverride !== "number") continue;
+            const speedOverride = this.resolveValue(speeds[type], null);
             actor.synthetics.movementTypes[type] = [];
-            const statistic = new SpeedStatistic(actor, { type, base: speedOverride });
-            this.#suppressModifiers(statistic);
-            const traceData = statistic.getTraceData() as LandSpeedStatisticTraceData;
-            actor.system.movement.speeds[type] = traceData;
-        }
-    }
 
-    /** Disable ineligible check modifiers */
-    #suppressModifiers(statistic: { modifiers: readonly Modifier[] }): void {
-        for (const modifier of statistic.modifiers) {
-            if (!this.#filterModifier(modifier)) {
-                modifier.adjustments.push({ slug: null, test: () => true, suppress: true });
-                modifier.ignored = true;
-                modifier.enabled = false;
+            if (typeof speedOverride !== "number") {
+                delete actor.rollOptions.all[`speed:${type}`];
+                if (type !== "land") {
+                    actor.system.movement.speeds[type] = null;
+                    continue;
+                }
+                // Land can't be null, so create it with no modifiers as a workaround
+                const statistic = new SpeedStatistic(actor, { type, base: 0, domains: [] });
+                actor.system.movement.speeds.land = statistic.getTraceData();
+                continue;
             }
-        }
-        if (statistic instanceof StatisticModifier) {
-            statistic.calculateTotal();
-        }
-    }
 
-    #filterModifier(modifier: Modifier) {
-        if (modifier.slug === "battle-form") return true;
-        if (modifier.type === "ability") return false;
-        return ["status", "circumstance"].includes(modifier.type) || modifier.modifier < 0;
+            const statistic = new SpeedStatistic(actor, { type, base: speedOverride });
+            suppressUnsharedModifiers(statistic);
+            actor.system.movement.speeds[type] = statistic.getTraceData() as LandSpeedStatisticTraceData;
+        }
     }
 
     #suppressNotes(notes: RollNotePF2e[]): void {

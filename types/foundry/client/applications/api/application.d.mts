@@ -214,14 +214,14 @@ export default abstract class ApplicationV2<
      * When the Application is rendered, optionally update aspects of the window frame.
      * @param options               Options provided at render-time
      */
-    protected _updateFrame(options: TRenderOptions): void;
+    protected _updateFrame(options: DeepPartial<TRenderOptions>): void;
 
     /**
      * Insert the application HTML element into the DOM.
      * Subclasses may override this method to customize how the application is inserted.
      * @param element The element to insert
      */
-    protected _insertElement(element: HTMLElement): void;
+    protected _insertElement(element: HTMLElement): Promise<void>;
 
     /* -------------------------------------------- */
     /*  Closing                                     */
@@ -361,6 +361,13 @@ export default abstract class ApplicationV2<
     protected _onRender(context: object, options: TRenderOptions): Promise<void>;
 
     /**
+     * Perform post-render finalization actions.
+     * @param context Prepared context data.
+     * @param options Provided render options.
+     */
+    protected _postRender(context: ApplicationRenderContext, options: TRenderOptions): Promise<void>;
+
+    /**
      * Actions performed before closing the Application.
      * Pre-close steps are awaited by the close process.
      * @param options Provided render options
@@ -387,6 +394,22 @@ export default abstract class ApplicationV2<
      * @param position          The requested application position
      */
     protected _onPosition(position: ApplicationPosition): void;
+
+    /**
+     * Actions performed after the Application has been re-attached to the main workspace.
+     * Registered child Applications are re-attached automatically after this method returns.
+     * @param from The Application's former host document. This document's window may have been closed.
+     * @param to   The main workspace document.
+     */
+    protected _onAttach(from: Document, to: Document): void;
+
+    /**
+     * Actions performed after the Application has been detached from the main workspace.
+     * Registered child Applications are moved into the same detached window automatically after this method returns.
+     * @param from The main workspace document.
+     * @param to   The Application's new host document.
+     */
+    protected _onDetach(from: Document, to: Document): void;
 
     /* -------------------------------------------- */
     /*  Event Listeners and Handlers                */

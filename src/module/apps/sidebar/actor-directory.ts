@@ -9,7 +9,7 @@ import type { DropCanvasData } from "@client/helpers/hooks.d.mts";
 import type { ActorUUID } from "@common/documents/_module.d.mts";
 import { htmlClosest, htmlQueryAll } from "@util";
 import * as R from "remeda";
-import { TradeDialog, TradeRequestData } from "../trade-dialog/app.ts";
+import { TradeDialog, TradeRequestData } from "../trade-dialog/app.svelte.ts";
 
 /** Extend ActorDirectory to show more information */
 class ActorDirectoryPF2e extends fa.sidebar.tabs.ActorDirectory<ActorPF2e<null>> {
@@ -179,7 +179,7 @@ class ActorDirectoryPF2e extends fa.sidebar.tabs.ActorDirectory<ActorPF2e<null>>
     }
 
     protected override _onDragStart(event: DragEvent): void {
-        if (!(event.target instanceof HTMLElement && event.dataTransfer)) {
+        if (!(event.target && fu.isElementInstanceOf(event.target, HTMLElement) && event.dataTransfer)) {
             return super._onDragStart(event);
         }
 

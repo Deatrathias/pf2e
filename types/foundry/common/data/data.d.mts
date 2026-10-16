@@ -253,11 +253,12 @@ export class EmanationShapeData extends BaseShapeData<EmanationShapeDataSchema> 
 export interface EmanationShapeData
     extends BaseShapeData<EmanationShapeDataSchema>, fields.ModelPropsFromSchema<EmanationShapeDataSchema> {
     readonly _source: Omit<fields.SourceFromSchema<EmanationShapeDataSchema>, "type"> & { type: "emanation" };
+    readonly type: "emanation";
 }
 
 type EmanationShapeDataSchema = BaseShapeDataSchema & {
     /** The base shape of the emanation */
-    base: fields.TypedSchemaField<Omit<typeof BaseShapeData.TYPES, "emanation">>;
+    base: fields.TypedSchemaField<Omit<typeof BaseShapeData.TYPES, "emanation" | "ring">>;
     /** The radius of the emanation in pixels */
     radius: fields.NumberField<number, number, true, false, false>;
     /**
@@ -284,6 +285,7 @@ export class ConeShapeData extends BaseShapeData<ConeShapeDataSchema> {
 export interface ConeShapeData
     extends BaseShapeData<ConeShapeDataSchema>, fields.ModelPropsFromSchema<ConeShapeDataSchema> {
     readonly _source: Omit<fields.SourceFromSchema<ConeShapeDataSchema>, "type"> & { type: "cone" };
+    readonly type: "cone";
 }
 
 type ConeShapeDataSchema = BaseShapeDataSchema & {
@@ -350,6 +352,7 @@ export class LineShapeData extends BaseShapeData<LineShapeDataSchema> {
 export interface LineShapeData
     extends BaseShapeData<LineShapeDataSchema>, fields.ModelPropsFromSchema<LineShapeDataSchema> {
     readonly _source: Omit<fields.SourceFromSchema<LineShapeDataSchema>, "type"> & { type: "line" };
+    readonly type: "line";
 }
 
 type LineShapeDataSchema = BaseShapeDataSchema & {
@@ -403,6 +406,7 @@ export class TokenShapeData extends BaseShapeData<TokenShapeDataSchema> {
 export interface TokenShapeData
     extends BaseShapeData<TokenShapeDataSchema>, fields.ModelPropsFromSchema<TokenShapeDataSchema> {
     readonly _source: Omit<fields.SourceFromSchema<TokenShapeDataSchema>, "type"> & { type: "token" };
+    readonly type: "token";
 }
 
 type TokenShapeDataSchema = BaseShapeDataSchema & {
@@ -415,7 +419,7 @@ type TokenShapeDataSchema = BaseShapeDataSchema & {
     /** The height in grid spaces (positive). */
     height: fields.NumberField<number, number, true, false, false>;
     /** The shape type (see {@link CONST.TOKEN_SHAPES}). */
-    shape: fields.NumberField<TokenShapeType | TokenShapeType, true, true, false>;
+    shape: fields.NumberField<TokenShapeType, TokenShapeType, true, true, false>;
 };
 
 /**
@@ -436,6 +440,7 @@ export class GridShapeData extends BaseShapeData<GridShapeDataSchema> {
 export interface GridShapeData
     extends BaseShapeData<GridShapeDataSchema>, fields.ModelPropsFromSchema<GridShapeDataSchema> {
     readonly _source: Omit<fields.SourceFromSchema<GridShapeDataSchema>, "type"> & { type: "grid" };
+    readonly type: "grid";
 }
 
 type GridShapeDataSchema = BaseShapeDataSchema & {
@@ -453,9 +458,8 @@ type GridShapeDataSchema = BaseShapeDataSchema & {
     >;
 };
 
-export type SpecificShapeSource = InstanceType<
-    (typeof BaseShapeData.TYPES)[keyof typeof BaseShapeData.TYPES]
->["_source"];
+export type SpecificShapeData = InstanceType<(typeof BaseShapeData.TYPES)[keyof typeof BaseShapeData.TYPES]>;
+export type SpecificShapeSource = SpecificShapeData["_source"];
 
 /** A {@link fields.SchemaField} subclass used to represent texture data. */
 export class TextureData extends fields.SchemaField<TextureDataSchema> {

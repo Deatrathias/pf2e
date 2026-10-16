@@ -1,10 +1,11 @@
 import { EquippedData } from "./data.ts";
+import type { OneToTwo } from "@module/data.ts";
 
 interface HeldUsage {
     value: string;
     type: "held";
     where?: never;
-    hands: 1 | 2;
+    hands: OneToTwo;
 }
 
 interface WornUsage {
@@ -73,8 +74,8 @@ function getUsageDetails(usage: string): UsageDetails {
         return { value: usage, type: "attached", where };
     }
 
-    if (usage.startsWith("installed-in")) {
-        const where = usage.replace(/^installed-in-/, "");
+    if (/^installed-(?:i|o)n-/.test(usage)) {
+        const where = usage.replace(/^installed-(?:i|o)n-/, "");
         return { value: usage, type: "installed", where };
     }
 

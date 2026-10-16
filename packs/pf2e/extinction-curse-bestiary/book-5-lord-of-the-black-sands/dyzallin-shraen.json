@@ -3567,7 +3567,7 @@
                 },
                 "containerId": null,
                 "description": {
-                    "value": "<p>This elegant silver band often resembles curling fig leaves and fits around your brow. You gain a +2 item bonus to Deception and Diplomacy checks. When you invest the circlet, you either increase your Charisma score by 2 or increase it to 18, whichever would give you a higher score.</p>\n<p><strong>Activate</strong> <span class=\"action-glyph\">2</span> envision</p>\n<p><strong>Frequency</strong> once per hour</p>\n<hr />\n<p><strong>Effect</strong> You cast a 4th-rank @UUID[Compendium.pf2e.spells-srd.Item.Charm] spell (DC 38).</p>"
+                    "value": "<p>This elegant silver band often resembles curling fig leaves and fits around your brow. You gain a +2 item bonus to Deception and Diplomacy checks. When you invest the circlet, you either increase your Charisma modifier by 1 or increase it to +4, whichever would give you a higher value.</p>\n<p><strong>Activate</strong> <span class=\"action-glyph\">2</span> envision</p>\n<p><strong>Frequency</strong> once per hour</p>\n<hr />\n<p><strong>Effect</strong> You cast a 4th-rank @UUID[Compendium.pf2e.spells-srd.Item.Charm] spell (DC 38).</p>"
                 },
                 "equipped": {
                     "carryType": "worn",
@@ -4401,7 +4401,7 @@
                 },
                 "category": "defensive",
                 "description": {
-                    "value": "<p>30 feet. Living creatures are @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2} while in Dyzallin's utter despair aura. They can't naturally recover from this fear while in the area but lose the frightened condition immediately upon leaving the area.</p>\n<p>When a creature first enters the aura, it must succeed at a @Check[will|dc:39|traits:incapacitation] save (after taking the penalty from being frightened) or be @UUID[Compendium.pf2e.conditionitems.Item.Paralyzed] for [[/gmr 1d4 #rounds]]{1d4 rounds}.</p>\n<p>The creature is then temporarily immune to the paralysis caused by the utter despair aura for 24 hours.</p>\n<p>@UUID[Compendium.pf2e.bestiary-effects.Item.Effect: Utter Despair]</p>"
+                    "value": "<p>30 feet. Living creatures are @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2} while in Dyzallin's utter despair aura. They can't naturally recover from this fear while in the area but lose the frightened condition immediately upon leaving the area.</p>\n<p>When a creature first enters the aura, it must succeed at a @Check[will|dc:39|traits:incapacitation|options:inflicts:paralyzed] save (after taking the penalty from being frightened) or be @UUID[Compendium.pf2e.conditionitems.Item.Paralyzed] for [[/gmr 1d4 #rounds]]{1d4 rounds}.</p>\n<p>The creature is then temporarily immune to the paralysis caused by the utter despair aura for 24 hours.</p>\n<p>@UUID[Compendium.pf2e.bestiary-effects.Item.Effect: Utter Despair]</p>"
                 },
                 "publication": {
                     "license": "OGL",

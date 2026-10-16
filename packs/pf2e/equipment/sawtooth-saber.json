@@ -52,7 +52,7 @@
         "quantity": 1,
         "range": null,
         "reload": {
-            "value": null
+            "value": ""
         },
         "rules": [],
         "runes": {

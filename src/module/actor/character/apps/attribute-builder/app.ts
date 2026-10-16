@@ -11,8 +11,17 @@ interface AttributeBuilderConfiguration extends fa.ApplicationConfiguration {
     actor: CharacterPF2e;
 }
 
+interface AttributeBuilderRenderOptions extends fa.ApplicationRenderOptions {
+    /** A character to which this application should switch its focus */
+    actor?: CharacterPF2e;
+}
+
+type BoostFlawSlots = Record<string, { value: AttributeString[]; selected: AttributeString | null }>;
+
 class AttributeBuilder extends SvelteApplicationMixin<
-    AbstractConstructorOf<fa.api.ApplicationV2> & { DEFAULT_OPTIONS: DeepPartial<AttributeBuilderConfiguration> }
+    AbstractConstructorOf<fa.api.ApplicationV2<fa.ApplicationConfiguration, AttributeBuilderRenderOptions>> & {
+        DEFAULT_OPTIONS: DeepPartial<AttributeBuilderConfiguration>;
+    }
 >(fa.api.ApplicationV2) {
     /** Number of attributes in the game (str, dex, con, int, wis, cha) */
     static ALL_ATTRIBUTES_COUNT = 6;
@@ -39,8 +48,12 @@ class AttributeBuilder extends SvelteApplicationMixin<
 
     protected root = Root;
 
-    get #actor(): CharacterPF2e {
-        return this.options.actor;
+    /** The character whose attributes are being built. Switchable via render options */
+    #actor: CharacterPF2e;
+
+    constructor(options: DeepPartial<AttributeBuilderConfiguration> & { actor: CharacterPF2e }) {
+        super(options);
+        this.#actor = options.actor;
     }
 
     /** Re-evaluate ABP status on each access rather than caching at construction to avoid need for page reload */
@@ -48,16 +61,27 @@ class AttributeBuilder extends SvelteApplicationMixin<
         return game.pf2e.variantRules.AutomaticBonusProgression.isEnabled(this.#actor);
     }
 
+    protected override _configureRenderOptions(options: DeepPartial<AttributeBuilderRenderOptions>): void {
+        super._configureRenderOptions(options);
+        const actor = options.actor ?? this.#actor;
+        if (actor !== this.#actor) {
+            delete this.#actor.apps[this.id];
+            this.#actor = actor;
+            // Registration with the actor on first render is handled by `_onFirstRender`
+            if (!options.isFirstRender) actor.apps[this.id] = this;
+        }
+    }
+
     protected override async _onFirstRender(
         context: AttributeBuilderContext,
         options: fa.ApplicationRenderOptions,
     ): Promise<void> {
         await super._onFirstRender(context, options);
-        this.options.actor.apps[this.id] = this;
+        this.#actor.apps[this.id] = this;
     }
 
     protected override _tearDown(options: fa.ApplicationClosingOptions): void {
-        delete this.options.actor.apps[this.id];
+        delete this.#actor.apps[this.id];
         super._tearDown(options);
     }
 
@@ -89,10 +113,19 @@ class AttributeBuilder extends SvelteApplicationMixin<
         };
     }
 
+    /** Key of the narrowest unselected slot offering the attribute, so a choice never lands where it isn't offered */
+    #findOpenSlot(slots: BoostFlawSlots | undefined, attribute: AttributeString): string | null {
+        return (
+            R.entries(slots ?? {})
+                .filter(([, s]) => !s.selected && s.value.includes(attribute))
+                .sort(([, a], [, b]) => a.value.length - b.value.length)[0]?.[0] ?? null
+        );
+    }
+
     async toggleAlternateAncestryBoosts(): Promise<void> {
         const ancestry = this.#actor.ancestry;
         const hasAlternateBoosts = !!ancestry?.system.alternateAncestryBoosts;
-        await ancestry?.update({ "system.alternateAncestryBoosts": hasAlternateBoosts ? _del : [] });
+        await ancestry?.update({ "system.alternateAncestryBoosts": hasAlternateBoosts ? null : [] });
     }
 
     async toggleLegacyVoluntaryFlaw(): Promise<void> {
@@ -100,12 +133,12 @@ class AttributeBuilder extends SvelteApplicationMixin<
         if (!ancestry) return;
 
         const voluntary = ancestry.system.voluntary;
-        if (voluntary?.boost !== undefined) {
+        if (voluntary.legacy) {
             const flaws = R.unique(voluntary.flaws);
-            await ancestry.update({ system: { voluntary: { boost: _del, flaws } } });
+            await ancestry.update({ system: { voluntary: { legacy: false, boost: null, flaws } } });
         } else {
-            const flaws = voluntary?.flaws.slice(0, 2) ?? [];
-            await ancestry.update({ system: { voluntary: { boost: null, flaws } } });
+            const flaws = voluntary.flaws.slice(0, 2);
+            await ancestry.update({ system: { voluntary: { legacy: true, boost: null, flaws } } });
         }
     }
 
@@ -128,11 +161,25 @@ class AttributeBuilder extends SvelteApplicationMixin<
             return;
         }
 
-        const freeBoost = Object.entries(ancestry.system.boosts ?? {}).find(
-            ([, b]) => !b.selected && b.value.length > 0,
-        );
-        if (freeBoost) {
-            await ancestry.update({ [`system.boosts.${freeBoost[0]}.selected`]: attribute });
+        const openSlot = this.#findOpenSlot(ancestry.system.boosts, attribute);
+        if (openSlot) {
+            await ancestry.update({ [`system.boosts.${openSlot}.selected`]: attribute });
+        }
+    }
+
+    async handleAncestryFlaw(attribute: AttributeString): Promise<void> {
+        const ancestry = this.#actor.ancestry;
+        if (!ancestry || ancestry.system.alternateAncestryBoosts) return;
+
+        const flawToRemove = Object.entries(ancestry.system.flaws ?? {}).find(([, f]) => f.selected === attribute);
+        if (flawToRemove) {
+            await ancestry.update({ [`system.flaws.${flawToRemove[0]}.selected`]: null });
+            return;
+        }
+
+        const openSlot = this.#findOpenSlot(ancestry.system.flaws, attribute);
+        if (openSlot) {
+            await ancestry.update({ [`system.flaws.${openSlot}.selected`]: attribute });
         }
     }
 
@@ -140,7 +187,7 @@ class AttributeBuilder extends SvelteApplicationMixin<
         const ancestry = this.#actor.ancestry;
         if (!ancestry) return;
 
-        const { flaws, boost } = ancestry.system.voluntary ?? { flaws: [] };
+        const { legacy, flaws, boost } = ancestry.system.voluntary;
 
         if (action === "flaw") {
             const alreadyHasFlaw = flaws.includes(attribute);
@@ -153,10 +200,9 @@ class AttributeBuilder extends SvelteApplicationMixin<
             }
 
             // Add a flaw if allowed (legacy mode has max 2, modern has max 6)
-            const maxFlaws =
-                boost !== undefined
-                    ? AttributeBuilder.MAX_VOLUNTARY_FLAWS_LEGACY
-                    : AttributeBuilder.ALL_ATTRIBUTES_COUNT;
+            const maxFlaws = legacy
+                ? AttributeBuilder.MAX_VOLUNTARY_FLAWS_LEGACY
+                : AttributeBuilder.ALL_ATTRIBUTES_COUNT;
             if (flaws.length < maxFlaws && !alreadyHasFlaw) {
                 flaws.push(attribute);
                 await ancestry.update({ system: { voluntary: { flaws } } });
@@ -174,8 +220,7 @@ class AttributeBuilder extends SvelteApplicationMixin<
             await ancestry.update({ system: { voluntary: { flaws } } });
         } else {
             // boost action
-            const currentBoost = ancestry.system.voluntary?.boost;
-            const newBoost = currentBoost === attribute ? null : attribute;
+            const newBoost = boost === attribute ? null : attribute;
             await ancestry.update({ system: { voluntary: { boost: newBoost } } });
         }
     }
@@ -190,11 +235,9 @@ class AttributeBuilder extends SvelteApplicationMixin<
             return;
         }
 
-        const freeBoost = Object.entries(background.system.boosts ?? {}).find(
-            ([, b]) => !b.selected && b.value.length > 0,
-        );
-        if (freeBoost) {
-            await background.update({ [`system.boosts.${freeBoost[0]}.selected`]: attribute });
+        const openSlot = this.#findOpenSlot(background.system.boosts, attribute);
+        if (openSlot) {
+            await background.update({ [`system.boosts.${openSlot}.selected`]: attribute });
         }
     }
 

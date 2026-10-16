@@ -44,6 +44,9 @@
         },
         {
             "_id": "6z2fsXv2zwv6M1ij",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.Oj1PJBMQD9vuwCv7"
+            },
             "folder": "IfuYSF4ymX48CZnm",
             "img": "systems/pf2e/icons/spells/maze.webp",
             "name": "Quandary",
@@ -57,7 +60,7 @@
                 "damage": {},
                 "defense": null,
                 "description": {
-                    "value": "<p>You transport the target into an extraplanar puzzle room of mysterious origin, locking them there. Once each turn as a single action, the target can attempt an Occultism check, Perception check, or Thievery check against your spell DC to solve the puzzle. Teleportation effects can't carry the target outside the puzzle room unless they can also traverse the planes, such as @UUID[Compendium.pf2e.spells-srd.Item.Interplanar Teleport]. When the spell ends, the target returns to the space it occupied when it was banished, or to the nearest space if the original is now filled.</p>\n<hr />\n<p><strong>Critical Success</strong> The target solves the puzzle and escapes.</p>\n<p><strong>Success</strong> The target is on the right path to the solution. If it was already on the right path, it solves the puzzle and escapes.</p>\n<p><strong>Failure</strong> The target makes no progress toward a solution.</p>\n<p><strong>Critical Failure</strong> The target makes no progress and, if it was on the right path, it no longer is.</p>"
+                    "value": "<p>You transport the target into an extraplanar puzzle room of mysterious origin, locking them there. Once each turn as a single action, the target can attempt an @Check[occultism] check, @Check[perception] check, or @Check[thievery] check against your spell DC to solve the puzzle. Teleportation effects can't carry the target outside the puzzle room unless they can also traverse the planes, such as @UUID[Compendium.pf2e.spells-srd.Item.Interplanar Teleport]. When the spell ends, the target returns to the space it occupied when it was banished, or to the nearest space if the original is now filled.</p><hr /><p><strong>Critical Success</strong> The target solves the puzzle and escapes.</p>\n<p><strong>Success</strong> The target is on the right path to the solution. If it was already on the right path, it solves the puzzle and escapes.</p>\n<p><strong>Failure</strong> The target makes no progress toward a solution.</p>\n<p><strong>Critical Failure</strong> The target makes no progress and, if it was on the right path, it no longer is.</p>"
                 },
                 "duration": {
                     "sustained": true,
@@ -104,6 +107,9 @@
         },
         {
             "_id": "s9KmXS9WnrFkLgsw",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.O6VQC1Bs4aSYDa6R"
+            },
             "folder": "xqlqJ6eeiNtWb7bq",
             "img": "icons/commodities/treasure/mask-wood-tan.webp",
             "name": "Mask of Terror",
@@ -122,11 +128,21 @@
                     }
                 },
                 "description": {
-                    "value": "<p>The target appears to be a gruesome and terrifying creature. The effect is unique to each observer, so a human viewing the target might see a demon with bloody fangs, but a demon observing the target might see a glowing angelic visage.</p>\n<p>When any creature attempts a hostile action against the target, the creature must attempt a Will save. It is then temporarily immune until the end of its next turn.</p>\n<p><strong>Success</strong> The creature is unaffected.</p>\n<p><strong>Failure</strong> The creature becomes @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2} before using its action.</p>\n<p><strong>Critical Failure</strong> The creature becomes @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2}, and its action fails and is wasted.</p>\n<hr />\n<p><strong>Heightened (8th)</strong> You can target up to 5 creatures. If a creature uses a hostile action or reaction that affects multiple targets simultaneously, it needs to attempt only one save against <em>mask of terror</em>.</p>"
+                    "value": "<p>The target appears to be a gruesome and terrifying creature. The effect is unique to each observer, so a human viewing the target might see a demon with bloody fangs, but a demon observing the target might see a glowing angelic visage.</p>\n<p>When any creature attempts a hostile action against the target, the creature must attempt a Will save. It is then temporarily immune until the end of its next turn.</p>\n<p><strong>Success</strong> The creature is unaffected.</p>\n<p><strong>Failure</strong> The creature becomes @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2} before using its action.</p>\n<p><strong>Critical Failure</strong> The creature becomes frightened 2, and its action fails and is wasted.</p><hr /><p><strong>Heightened (8th)</strong> You can target up to 5 creatures. If a creature uses a hostile action or reaction that affects multiple targets simultaneously, it needs to attempt only one save against <em>mask of terror</em>.</p>"
                 },
                 "duration": {
                     "sustained": false,
                     "value": "1 minute"
+                },
+                "heightening": {
+                    "levels": {
+                        "8": {
+                            "target": {
+                                "value": "up to 5 creatures"
+                            }
+                        }
+                    },
+                    "type": "fixed"
                 },
                 "level": {
                     "value": 7
@@ -174,6 +190,9 @@
         },
         {
             "_id": "LG7o0TSLGaKc85Rh",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.8kJbiBEjMWG4VUjs"
+            },
             "folder": "xqlqJ6eeiNtWb7bq",
             "img": "systems/pf2e/icons/spells/warp-mind.webp",
             "name": "Warp Mind",
@@ -241,6 +260,9 @@
         },
         {
             "_id": "TdjRBVfEnmndM5jh",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.OsOhx3TGIZ7AhD0P"
+            },
             "folder": "zDlxATrLAlbYA2Mv",
             "img": "systems/pf2e/icons/spells/dominate.webp",
             "name": "Dominate",
@@ -308,6 +330,9 @@
         },
         {
             "_id": "1b0AdyXeFcWiwvDg",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.5BbU1V6wGSGbrmRD"
+            },
             "folder": "zDlxATrLAlbYA2Mv",
             "img": "systems/pf2e/icons/spells/feeblemind.webp",
             "name": "Never Mind",
@@ -375,6 +400,9 @@
         },
         {
             "_id": "hHlsciX8Yy0QJ2mr",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.bay4AfSu2iIozNNW"
+            },
             "folder": "iDjm2cXyRAe4VZ35",
             "img": "systems/pf2e/icons/spells/banishment.webp",
             "name": "Banishment",
@@ -452,6 +480,9 @@
         },
         {
             "_id": "PblUyIyIkExLWH94",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.9BnhadUO8FMLmeZ3"
+            },
             "folder": "iDjm2cXyRAe4VZ35",
             "img": "systems/pf2e/icons/spells/mind-probe.webp",
             "name": "Mind Probe",
@@ -518,6 +549,9 @@
         },
         {
             "_id": "eWSbVY94WIQsRrMn",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.GP3wewkQXEPrLxYj"
+            },
             "folder": "iDjm2cXyRAe4VZ35",
             "img": "icons/magic/symbols/runes-carved-stone-yellow.webp",
             "name": "Subconscious Suggestion",
@@ -596,6 +630,9 @@
         },
         {
             "_id": "MmVHhnHXZCCjTAPG",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.4gBIw4IDrSfFHik4"
+            },
             "folder": "D7UVaOiB40wTR6kv",
             "img": "systems/pf2e/icons/spells/daze.webp",
             "name": "Daze",
@@ -681,6 +718,9 @@
         },
         {
             "_id": "xTlD52Cg1LaZlMYh",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.gpzpAAAJ1Lza2JVl"
+            },
             "folder": "D7UVaOiB40wTR6kv",
             "img": "systems/pf2e/icons/spells/detect-magic.webp",
             "name": "Detect Magic",
@@ -746,6 +786,9 @@
         },
         {
             "_id": "3FjdPFpqh4X3x55F",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.0zU8CPejjQFnhZFI"
+            },
             "folder": "D7UVaOiB40wTR6kv",
             "img": "systems/pf2e/icons/spells/ghost-sound.webp",
             "name": "Figment",
@@ -807,6 +850,9 @@
         },
         {
             "_id": "0a7GZPzjCflhWBjR",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.5gophZ4AOKW4VW27"
+            },
             "folder": "D7UVaOiB40wTR6kv",
             "img": "systems/pf2e/icons/spells/phase-bolt.webp",
             "name": "Phase Bolt",
@@ -896,6 +942,9 @@
         },
         {
             "_id": "5yelvMOdnc3ZMJtg",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.pwzdSlJgYqN7bs2w"
+            },
             "folder": "D7UVaOiB40wTR6kv",
             "img": "systems/pf2e/icons/spells/mage-hand.webp",
             "name": "Telekinetic Hand",
@@ -1032,13 +1081,13 @@
                     "value": 32
                 },
                 "damageRolls": {
-                    "XakTHsboV2TeJaOU": {
-                        "damage": "2d6",
-                        "damageType": "fire"
-                    },
                     "o4rfy7dJErmTUnzR": {
                         "damage": "3d10+11",
                         "damageType": "mental"
+                    },
+                    "wZ7zA6SepvHEzsoA": {
+                        "damage": "2d6",
+                        "damageType": "fire"
                     }
                 },
                 "description": {
@@ -1103,7 +1152,7 @@
         {
             "_id": "46dLIVM7cpDD53uS",
             "img": "systems/pf2e/icons/actions/Passive.webp",
-            "name": "Personal Library",
+            "name": "Personal Archive",
             "sort": 1800000,
             "system": {
                 "actionType": {
@@ -1130,10 +1179,52 @@
             "type": "action"
         },
         {
+            "_id": "ZU1do1UMvUDLBeyP",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.bestiary-ability-glossary-srd.Item.kquBnQ0kObZztnBc"
+            },
+            "img": "systems/pf2e/icons/actions/Passive.webp",
+            "name": "+1 Status to All Saves vs. Magic",
+            "sort": 1900000,
+            "system": {
+                "actionType": {
+                    "value": "passive"
+                },
+                "actions": {
+                    "value": null
+                },
+                "category": "defensive",
+                "description": {
+                    "value": ""
+                },
+                "publication": {
+                    "license": "ORC",
+                    "remaster": true,
+                    "title": "Pathfinder Monster Core"
+                },
+                "rules": [
+                    {
+                        "key": "FlatModifier",
+                        "predicate": [
+                            "item:magical"
+                        ],
+                        "selector": "saving-throw",
+                        "type": "status",
+                        "value": 1
+                    }
+                ],
+                "slug": "1-status-to-all-saves-vs-magic",
+                "traits": {
+                    "value": []
+                }
+            },
+            "type": "action"
+        },
+        {
             "_id": "jUAtoBpUZQvKebon",
             "img": "systems/pf2e/icons/actions/Reaction.webp",
             "name": "Spellblock Ledger",
-            "sort": 1900000,
+            "sort": 2000000,
             "system": {
                 "actionType": {
                     "value": "reaction"
@@ -1165,7 +1256,7 @@
             "_id": "rNubcNzojHn1anXP",
             "img": "systems/pf2e/icons/actions/ThreeActions.webp",
             "name": "Herald Heresy",
-            "sort": 2000000,
+            "sort": 2100000,
             "system": {
                 "actionType": {
                     "value": "action"
@@ -1200,7 +1291,7 @@
             "_id": "Igt88kb16Bk6ajJg",
             "img": "systems/pf2e/icons/actions/Passive.webp",
             "name": "Poison Minds",
-            "sort": 2100000,
+            "sort": 2200000,
             "system": {
                 "actionType": {
                     "value": "passive"
@@ -1229,7 +1320,7 @@
             "_id": "HRVwNOINvGFHbgfw",
             "img": "systems/pf2e/icons/default-icons/lore.svg",
             "name": "Heraldry Lore",
-            "sort": 2200000,
+            "sort": 2300000,
             "system": {
                 "description": {
                     "value": ""

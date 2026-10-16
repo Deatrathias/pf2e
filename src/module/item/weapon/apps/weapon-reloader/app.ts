@@ -36,7 +36,7 @@ class WeaponReloader extends SvelteApplicationMixin<
 
     declare options: WeaponReloaderConfiguration;
 
-    override root = Root;
+    protected root = Root;
 
     #closeSignal = new AbortController();
 
@@ -46,13 +46,12 @@ class WeaponReloader extends SvelteApplicationMixin<
 
     /** A special close if clicked outside listener, pre-bound to "this" for add/remove support */
     #closeListener = (event: PointerEvent | KeyboardEvent | WheelEvent) => {
-        if (event instanceof KeyboardEvent && event.key === "Escape") {
+        if (fu.isElementInstanceOf(event, KeyboardEvent) && event.key === "Escape") {
             event.stopPropagation();
             this.close();
         } else if (
-            event instanceof PointerEvent &&
-            event.target instanceof HTMLElement &&
-            event.target.closest(".application") !== this.element
+            fu.isElementInstanceOf(event, PointerEvent) &&
+            htmlClosest(event.target, ".application") !== this.element
         ) {
             this.close();
         }
@@ -202,13 +201,15 @@ class WeaponReloader extends SvelteApplicationMixin<
     }
 }
 
+interface ReloadWeaponState {
+    loaded: ValueAndMax;
+    weapon: BasePhysicalItemViewData;
+    compatible: AmmoChoiceViewData[];
+}
+
 interface ReloadWeaponContext extends SvelteApplicationRenderContext {
     foundryApp: WeaponReloader;
-    state: {
-        loaded: ValueAndMax;
-        weapon: BasePhysicalItemViewData;
-        compatible: AmmoChoiceViewData[];
-    };
+    state: ReloadWeaponState;
 }
 
 interface AmmoChoiceViewData extends BasePhysicalItemViewData {
@@ -218,4 +219,4 @@ interface AmmoChoiceViewData extends BasePhysicalItemViewData {
 }
 
 export { WeaponReloader };
-export type { ReloadWeaponContext };
+export type { ReloadWeaponContext, ReloadWeaponState };

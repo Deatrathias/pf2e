@@ -1,4 +1,6 @@
 import type { ActorPF2e, ActorType, CharacterPF2e, NPCPF2e } from "@actor";
+import type { CharacterStrike } from "@actor/character/data.ts";
+import { DamageDicePF2e, Modifier } from "@actor/modifiers.ts";
 import type { ImageFilePath } from "@common/constants.d.mts";
 import { WeaponPF2e } from "@item";
 import { performLatePreparation } from "@item/helpers.ts";
@@ -12,9 +14,12 @@ import type {
     WeaponRangeIncrement,
     WeaponTrait,
 } from "@item/weapon/types.ts";
+import type { OneToTwo } from "@module/data.ts";
 import type { DamageDieSize, DamageType } from "@system/damage/index.ts";
 import { objectHasKey, sluggify } from "@util";
+import { isSharedStatisticModifier, suppressUnsharedModifiers, useFixedStatisticModifier } from "../helpers.ts";
 import { RuleElement, RuleElementOptions } from "./base.ts";
+import type { BattleFormSource } from "./battle-form/types.ts";
 import { ModelPropsFromRESchema, ResolvableValueField, RuleElementSchema, RuleElementSource } from "./data.ts";
 import fields = foundry.data.fields;
 
@@ -88,6 +93,12 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
                 },
                 { required: true, nullable: false, initial: { modular: null, versatile: null } },
             ),
+            handsHeld: new fields.NumberField({
+                required: false,
+                nullable: false,
+                choices: [1, 2],
+                initial: 1,
+            }),
             otherTags: new fields.ArrayField(
                 new fields.StringField({ required: true, blank: false, choices: CONFIG.PF2E.otherWeaponTags }),
                 { required: false, nullable: false, initial: [] },
@@ -128,6 +139,7 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
                         : `systems/${SYSTEM_ID}/icons/default-icons/melee.svg`,
             }),
             attackModifier: new fields.NumberField({ integer: true, positive: true, nullable: true, initial: null }),
+            ownIfHigher: new fields.BooleanField({ initial: true }),
             replaceAll: new fields.BooleanField({ required: false, nullable: false, initial: undefined }),
             replaceBasicUnarmed: new fields.BooleanField({ required: false, nullable: false, initial: undefined }),
             battleForm: new fields.BooleanField({ required: false, nullable: false, initial: undefined }),
@@ -182,7 +194,7 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
         this.actor.synthetics.strikes[slug] = (unarmedRunes) => this.#constructWeapon({ slug, unarmedRunes });
     }
 
-    /** Exclude other strikes if this rule element specifies that its strike replaces all others */
+    /** Exclude other strikes if specified, then apply a PC fixed attack modifier if present */
     override afterPrepareData(): void {
         if (this.ignored || !this.actor.isOfType("character")) return;
 
@@ -202,6 +214,55 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
         } else if (this.replaceBasicUnarmed) {
             const systemData = this.actor.system;
             systemData.actions.findSplice((a) => a.item?.slug === "basic-unarmed");
+        }
+
+        const attackModifier = this.attackModifier;
+        if (!attackModifier) return;
+
+        const actions = this.actor.system.actions.flatMap((action) =>
+            [action, ...action.altUsages].filter(
+                (a): a is CharacterStrike => a.type === "strike" && a.item.rule === this,
+            ),
+        );
+        for (const action of actions) {
+            const useFixed = useFixedStatisticModifier({
+                fixed: attackModifier,
+                own: action.totalModifier,
+                modifiers: action.modifiers,
+                ownIfHigher: this.ownIfHigher,
+            });
+            if (!useFixed) continue;
+
+            suppressUnsharedModifiers(action);
+            action.unshift(
+                new Modifier({
+                    label: this.getReducedLabel(this.item.name),
+                    slug: "attack-modifier",
+                    modifier: attackModifier,
+                }),
+            );
+            action.breakdown = action.modifiers
+                .filter((m) => m.enabled)
+                .map((m) => `${m.label} ${m.signedValue}`)
+                .join(", ");
+        }
+    }
+
+    /** A fixed attack modifier comes with listed damage, which only status, circumstance, and penalties adjust */
+    override applyDamageExclusion(weapon: WeaponPF2e, modifiers: (DamageDicePF2e | Modifier)[]): void {
+        if (this.ignored || !this.attackModifier || weapon.rule !== this || !this.actor.isOfType("character")) return;
+
+        for (const modifier of modifiers) {
+            // Trait damage uses the trait as its slug, or a prefix of it for boost and scatter
+            const fromTrait = this.traits.some((t) => t === modifier.slug || t.startsWith(`${modifier.slug}-`));
+            const applies =
+                fromTrait ||
+                modifier.source === this.item.uuid ||
+                (modifier instanceof Modifier && isSharedStatisticModifier(modifier));
+            if (!applies) {
+                modifier.enabled = false;
+                modifier.ignored = true;
+            }
         }
     }
 
@@ -245,7 +306,7 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
             flags: {
                 [SYSTEM_ID]: {
                     battleForm: this.battleForm,
-                    fixedAttack: actorIsNPC ? (this.attackModifier ?? null) : null,
+                    fixedAttack: this.attackModifier,
                 },
             },
             system: {
@@ -279,7 +340,7 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
                 usage: { value: "held-in-one-hand" },
                 equipped: {
                     carryType: "held",
-                    handsHeld: 1,
+                    handsHeld: this.handsHeld,
                 },
                 graspingAppendage: this.graspingAppendage,
             },
@@ -292,14 +353,29 @@ class StrikeRuleElement extends RuleElement<StrikeSchema> {
         return weapon;
     }
 
-    /** Toggle the modular or versatile trait of this strike's weapon */
-    async toggleTrait({ trait, selected }: UpdateToggleParams): Promise<void> {
+    /** Persist changes to this rule element's own source on the parent item */
+    async #persistSource(changes: Partial<StrikeSource>): Promise<void> {
         const ruleSources = fu.deepClone(this.item._source.system.rules);
-        const rule: StrikeSource | undefined = ruleSources.at(this.sourceIndex ?? NaN);
+        const rule = ruleSources.at(this.sourceIndex ?? NaN);
         if (rule?.key === "Strike") {
-            rule.traitToggles = { ...this.traitToggles, [trait]: selected };
+            Object.assign(rule, changes);
+            await this.item.update({ "system.rules": ruleSources });
+        } else if (rule?.key === "BattleForm" && this.battleForm && this.slug) {
+            // Persist to the constructing BattleForm rule's strike override
+            const battleForm: BattleFormSource = rule;
+            fu.mergeObject(battleForm, { overrides: { strikes: { [this.slug]: changes } } });
             await this.item.update({ "system.rules": ruleSources });
         }
+    }
+
+    /** Toggle the modular or versatile trait of this strike's weapon */
+    async toggleTrait({ trait, selected }: UpdateToggleParams): Promise<void> {
+        await this.#persistSource({ traitToggles: { ...this.traitToggles, [trait]: selected } });
+    }
+
+    /** Toggle whether this strike's weapon is wielded in one or two hands */
+    async toggleGrip(handsHeld: OneToTwo): Promise<void> {
+        await this.#persistSource({ handsHeld });
     }
 }
 
@@ -332,6 +408,8 @@ type StrikeSchema = RuleElementSchema & {
         false,
         true
     >;
+    /** Whether this strike's weapon is currently wielded in one or two hands */
+    handsHeld: fields.NumberField<OneToTwo, OneToTwo, false, false, true>;
     otherTags: fields.ArrayField<
         fields.StringField<OtherWeaponTag, OtherWeaponTag, true, false, false>,
         OtherWeaponTag[],
@@ -341,10 +419,13 @@ type StrikeSchema = RuleElementSchema & {
         true
     >;
     /**
-     * A fixed attack modifier: usable only if the strike is generated for an NPC
-     * Also causes the damage to not be recalculated when converting the resulting weapon to an NPC attack
+     * A fixed attack modifier. For NPCs it becomes the attack bonus, and damage isn't recalculated when converting
+     * the weapon to an NPC attack. For PCs it replaces the base attack-roll modifiers, and damage keeps only what
+     * the strike lists plus status, circumstance, and penalties.
      */
     attackModifier: fields.NumberField<number, number, false, true, true>;
+    /** Whether a PC keeps their own attack modifier when it's higher than `attackModifier` */
+    ownIfHigher: fields.BooleanField<boolean, boolean, true, false, true>;
     range: fields.SchemaField<
         {
             increment: fields.NumberField<number, number, false, true, true>;
@@ -402,6 +483,7 @@ interface StrikeSource extends RuleElementSource {
     range?: unknown;
     traits?: unknown;
     traitToggles?: unknown;
+    handsHeld?: unknown;
     replaceAll?: unknown;
     replaceBasicUnarmed?: unknown;
     battleForm?: unknown;
@@ -410,8 +492,7 @@ interface StrikeSource extends RuleElementSource {
 }
 
 type UpdateToggleParams =
-    | { trait: "modular"; selected: number | null }
-    | { trait: "versatile"; selected: DamageType | null };
+    { trait: "modular"; selected: number | null } | { trait: "versatile"; selected: DamageType | null };
 
 export { StrikeRuleElement };
 export type { StrikeSource };

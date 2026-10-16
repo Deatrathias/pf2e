@@ -14,7 +14,7 @@ type Size = (typeof SIZES)[number];
 const RARITIES = Object.freeze(["common", "uncommon", "rare", "unique"] as const);
 type Rarity = (typeof RARITIES)[number];
 
-interface ValuesList<T extends string = string> {
+interface ValuesList<T extends string | number = string | number> {
     value: T[];
 }
 
@@ -40,6 +40,7 @@ interface TraitsWithRarity<T extends string> {
 
 /** Literal numeric types */
 type ZeroToTwo = 0 | 1 | 2;
+type OneToTwo = Exclude<ZeroToTwo, 0>;
 type ZeroToThree = ZeroToTwo | 3; // +1!
 type OneToThree = Exclude<ZeroToThree, 0>;
 type TwoToThree = Exclude<OneToThree, 1>;
@@ -146,9 +147,7 @@ export const MATH_FUNCTION_NAMES: Set<MathFunctionName> = new Set([
 ] as const);
 
 type EnfolderableDocumentPF2e =
-    | ActorPF2e<null>
-    | ItemPF2e<null>
-    | Exclude<EnfolderableDocument, Actor<null> | Item<null>>;
+    ActorPF2e<null> | ItemPF2e<null> | Exclude<EnfolderableDocument, Actor<null> | Item<null>>;
 
 export { goesToEleven, RARITIES, SIZE_SLUGS, SIZES };
 export type {
@@ -162,6 +161,7 @@ export type {
     OneToSix,
     OneToTen,
     OneToThree,
+    OneToTwo,
     PublicationData,
     Rarity,
     Size,

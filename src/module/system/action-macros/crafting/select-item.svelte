@@ -1,10 +1,12 @@
 <script lang="ts">
-    import type { DropCanvasItemData } from "@module/canvas/drop-canvas-data.ts";
     import { ItemPF2e, type PhysicalItemPF2e } from "@item";
+    import { dropTarget, type DropData } from "@module/sheet/drop-target.ts";
+    import type { SvelteAppProps } from "@module/sheet/mixin.svelte.ts";
     import type { SelectItemRenderContext } from "./select-item.ts";
     import { sluggify } from "@util";
 
-    const { state: data, resolve }: SelectItemRenderContext = $props();
+    const { resolve, getState }: SelectItemRenderContext & SvelteAppProps<SelectItemRenderContext> = $props();
+    const data = $derived(getState());
 
     let selection: PhysicalItemPF2e | null = $state(null);
 
@@ -16,10 +18,8 @@
             : "systems/pf2e/icons/actions/repair/unknown-item.webp",
     );
 
-    async function handleDrop(event: DragEvent) {
-        const dataString = event.dataTransfer?.getData("text/plain");
-        const dropData: DropCanvasItemData | undefined = JSON.parse(dataString ?? "");
-        const droppedItem = dropData?.type === "Item" ? await ItemPF2e.fromDropData(dropData) : null;
+    async function handleDrop(dropped: DropData) {
+        const droppedItem = dropped.type === "Item" ? await ItemPF2e.fromDropData(dropped) : null;
 
         if (!(droppedItem instanceof ItemPF2e)) {
             ui.notifications.error(_loc(`PF2E.Actions.${actionKey}.Error.ItemReferenceMismatch`));
@@ -41,7 +41,7 @@
     }
 </script>
 
-<article ondrop={handleDrop}>
+<article {@attach dropTarget({ onDrop: handleDrop })}>
     <section class="drop-item-zone">
         {#if selection}
             <img src={selection.img} class="item-icon" alt={selection.name} />

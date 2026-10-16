@@ -467,10 +467,6 @@
                     "value": 26
                 },
                 "damageRolls": {
-                    "SLaDmk9EYQH1nJvs": {
-                        "damage": "1d6",
-                        "damageType": "fire"
-                    },
                     "rFpujaBIniE0yHMR": {
                         "damage": "1d8+12",
                         "damageType": "slashing"
@@ -485,7 +481,17 @@
                     "title": ""
                 },
                 "range": null,
-                "rules": [],
+                "rules": [
+                    {
+                        "definition": [
+                            "item:id:{item|_id}"
+                        ],
+                        "key": "AdjustStrike",
+                        "mode": "add",
+                        "property": "property-runes",
+                        "value": "flaming"
+                    }
+                ],
                 "slug": "battle-axe",
                 "traits": {
                     "value": [
@@ -653,7 +659,7 @@
                 },
                 "category": "offensive",
                 "description": {
-                    "value": "<p>When the Bonebleacher bugbear successfully Strikes an @UUID[Compendium.pf2e.conditionitems.Item.Off-Guard] creature with a poisoned weapon or exposes an off-guard creature to an inhaled poison, the creature takes a –2 circumstance penalty to its initial save against that poison.</p>"
+                    "value": "<p>When the Bonebleacher bugbear successfully Strikes an @UUID[Compendium.pf2e.conditionitems.Item.Off-Guard] creature with a poisoned weapon or exposes an off-guard creature to an inhaled poison, the creature takes a –2 circumstance penalty to its initial save against that poison.</p>\n<p>@UUID[Compendium.pf2e.feat-effects.Item.Effect: Pinpoint Poisoner]</p>"
                 },
                 "publication": {
                     "license": "OGL",

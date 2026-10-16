@@ -17,6 +17,7 @@ import { isContainerCycle } from "@item/container/helpers.ts";
 import { itemIsOfType } from "@item/helpers.ts";
 import { Coins, sizeItemForActor, transferCredits } from "@item/physical/helpers.ts";
 import { COIN_DENOMINATIONS, PHYSICAL_ITEM_TYPES } from "@item/physical/values.ts";
+import { TradeDialog } from "@module/apps/trade-dialog/app.svelte.ts";
 import { DropCanvasItemData } from "@module/canvas/drop-canvas-data.ts";
 import { createUseActionMessage } from "@module/chat-message/helpers.ts";
 import {
@@ -44,13 +45,13 @@ import {
 import { TextEditorPF2e } from "@system/text-editor.ts";
 import {
     ErrorPF2e,
-    SORTABLE_BASE_OPTIONS,
     htmlClosest,
     htmlQuery,
     htmlQueryAll,
     objectHasKey,
     setHasElement,
     signedInteger,
+    SORTABLE_BASE_OPTIONS,
     tupleHasValue,
 } from "@util";
 import { createSortable } from "@util/destroyables.ts";
@@ -382,8 +383,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
         if (!this.isEditable) return;
 
         // Handlers for number inputs of properties subject to modification by AE-like rules elements
-        const manualPropertyInputs = htmlQueryAll<HTMLInputElement | HTMLSelectElement>(
-            html,
+        const manualPropertyInputs = html.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
             "select[data-property],input[data-property]",
         );
         for (const input of manualPropertyInputs) {
@@ -395,7 +395,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
             input.addEventListener("focus", () => {
                 const propertyPath = input.dataset.property ?? "";
                 input.name = propertyPath;
-                if (input instanceof HTMLInputElement) {
+                if (fu.isElementInstanceOf(input, HTMLInputElement)) {
                     const savedValue = fu.getProperty(this.actor._source, propertyPath);
                     const baseValue = isNullable && savedValue === null ? null : Math.trunc(Number(savedValue) || 0);
                     input.value = (baseValue ?? "").toString();
@@ -412,7 +412,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
                 const currentValue = preparedValue === null && isNullable ? preparedValue : Number(preparedValue) || 0;
                 const baseValue = Math.trunc(Number(fu.getProperty(this.actor._source, propertyPath)) || 0);
                 const newValue = isNullable && input.value === "" ? null : Math.trunc(Number(input.value));
-                if (input instanceof HTMLInputElement) {
+                if (fu.isElementInstanceOf(input, HTMLInputElement)) {
                     if (input.type === "number" && input.dataset.dtype === "Number") {
                         input.type = "text";
                     }
@@ -430,8 +430,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
         }
 
         // General handler for embedded item updates
-        const itemPropertyInputs = htmlQueryAll<HTMLInputElement | HTMLSelectElement>(
-            html,
+        const itemPropertyInputs = html.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
             "input[data-item-id][data-item-property], select[data-item-id][data-item-property]",
         );
         for (const element of itemPropertyInputs) {
@@ -442,7 +441,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
 
                 const value = (() => {
                     const value =
-                        element instanceof HTMLInputElement && element.type === "checkbox"
+                        fu.isElementInstanceOf(element, HTMLInputElement) && element.type === "checkbox"
                             ? element.checked
                             : element.value;
                     if (typeof value === "boolean") return value;
@@ -461,7 +460,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
         }
 
         // Set listener toggles and their suboptions
-        for (const togglesSection of htmlQueryAll(html, "ul[data-option-toggles]")) {
+        for (const togglesSection of html.querySelectorAll("ul[data-option-toggles]")) {
             togglesSection.addEventListener("change", (event) => {
                 const toggleRow = htmlClosest(event.target, "[data-item-id][data-domain][data-option]");
                 const checkbox = htmlQuery<HTMLInputElement>(toggleRow, "input[data-action=toggle-roll-option]");
@@ -543,16 +542,13 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
         }
 
         // Select all text in an input field on focus
-        for (const inputElem of htmlQueryAll<HTMLInputElement>(html, "input[type=text], input[type=number]")) {
-            inputElem.addEventListener("focus", () => {
-                inputElem.select();
-            });
+        for (const input of html.querySelectorAll<HTMLInputElement>("input[type=text], input[type=number]")) {
+            input.addEventListener("focus", () => input.select());
         }
 
         // Inputs with the data-allow-delta attribute mostly emulate number type inputs, but allow +X and -X delta values
-        for (const deltaInput of htmlQueryAll<HTMLInputElement>(html, "input[data-allow-delta]")) {
+        for (const deltaInput of html.querySelectorAll<HTMLInputElement>("input[data-allow-delta]")) {
             deltaInput.dataset.numValue = deltaInput.value;
-
             const sendChangeEvent = fu.debounce((value: string) => {
                 deltaInput.value = value;
                 deltaInput.dispatchEvent(new Event("change", { bubbles: true }));
@@ -777,23 +773,15 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
                 if (event.ctrlKey) return sellItem();
 
                 const content = document.createElement("p");
-                content.innerText = _loc("PF2E.SellItemQuestion", { item: item.name });
-                return new foundry.appv1.api.Dialog({
-                    title: _loc("PF2E.SellItemConfirmHeader"),
+                content.textContent = _loc("PF2E.SellItemQuestion", { item: item.name });
+                const confirmed = await foundry.applications.api.DialogV2.confirm({
+                    id: "sell-item-confirm-{id}",
+                    window: { title: "PF2E.SellItemConfirmHeader" },
                     content: content.outerHTML,
-                    buttons: {
-                        Yes: {
-                            icon: fa.fields.createFontAwesomeIcon("check").outerHTML,
-                            label: _loc("COMMON.Yes"),
-                            callback: sellItem,
-                        },
-                        cancel: {
-                            icon: fa.fields.createFontAwesomeIcon("times").outerHTML,
-                            label: _loc("COMMON.Cancel"),
-                        },
-                    },
-                    default: "Yes",
-                }).render(true);
+                    yes: { default: true },
+                    no: { default: false },
+                });
+                if (confirmed) return sellItem();
             },
             "toggle-container": async (event) => {
                 const item = await inventoryItemFromDOM(event);
@@ -908,7 +896,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
     async #onDropInventoryItem(event: Sortable.SortableEvent & { originalEvent?: DragEvent }): Promise<void> {
         if (!this.isEditable) return;
         const dropTarget = event.originalEvent?.target;
-        const droppedOnCanvas = !!dropTarget && dropTarget instanceof HTMLCanvasElement;
+        const droppedOnCanvas = !!dropTarget && fu.isElementInstanceOf(dropTarget, HTMLCanvasElement);
         const droppedOnOtherSheet = !droppedOnCanvas && htmlClosest(event.originalEvent?.target, "form") !== this.form;
         if (droppedOnOtherSheet) return;
 
@@ -1019,7 +1007,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
 
     /** Add support for dropping actions and toggles */
     protected override _onDragStart(event: DragEvent): void {
-        if (!(event.target instanceof HTMLElement) || !event.dataTransfer) {
+        if (!(event.target && fu.isElementInstanceOf(event.target, HTMLElement)) || !event.dataTransfer) {
             return;
         }
 
@@ -1118,11 +1106,15 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
 
             const baseConditionSource = game.pf2e.ConditionManager.getCondition("persistent-damage").toObject();
             const conditions = roll.instances.map((i) =>
-                fu.mergeObject(baseConditionSource, {
-                    system: {
-                        persistent: { formula: i.head.expression, damageType: i.type, dc: 15 },
+                fu.mergeObject(
+                    baseConditionSource,
+                    {
+                        system: {
+                            persistent: { formula: i.head.expression, damageType: i.type, dc: 15 },
+                        },
                     },
-                }),
+                    { inplace: false },
+                ),
             );
             await this.actor.createEmbeddedDocuments("Item", conditions);
         } else {
@@ -1311,6 +1303,9 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
             throw ErrorPF2e("Unexpected missing actor(s)");
         }
 
+        // If the recipient can't simply be given the item, attempt a trade instead
+        if (await this.#attemptTrade(event, item, recipient)) return;
+
         const containerId = htmlClosest(event.target, "[data-is-container]")?.dataset.itemId?.trim();
         const stackable = !!recipient.inventory.findStackableItem(item._source, { containerId });
         const mode = sourceActor.isOfType("loot") && sourceActor.isMerchant ? "purchase" : "move";
@@ -1323,11 +1318,15 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
         const result = await ItemTransferDialog.wait({ item, recipient, lockStack: !stackable, mode });
         if (!result) return;
 
-        // If we're transferring all the credits, transfer the one credstick instead
+        // If we're transferring all credits and it is not a basic credstick, transfer the item instead
         const [resultMode, quantity] =
-            result.mode === "credits" && result.quantity >= item.system.price.value.credits
+            result.mode === "credits" &&
+            item.system.slug !== "credstick" &&
+            result.quantity >= item.system.price.value.credits
                 ? ["move", 1]
                 : [result.mode, result.quantity];
+
+        // Perform the transfer (handling credits or items)
         if (resultMode === "credits") {
             transferCredits({ targetActor: recipient, item, quantity });
         } else if (result) {
@@ -1337,9 +1336,45 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
                 quantity,
                 containerId,
                 result.newStack,
-                result.mode === "purchase",
+                resultMode === "purchase",
             );
         }
+    }
+
+    /**
+     * Determine whether a dropped item can be used for trading and initiate a trade if so.
+     * @returns whether a trade initiation request was sent
+     */
+    async #attemptTrade(event: DragEvent, item: PhysicalItemPF2e, recipient: ActorPF2e): Promise<boolean> {
+        if (game.user.isGM || recipient.isLootableBy(game.user)) return false;
+        const selfActor = item.actor;
+        if (!selfActor?.isOfType("character", "npc")) return false;
+        const traderUser = game.users
+            .filter((u) => u.active && !u.isSelf && recipient.testUserPermission(u, "OWNER"))
+            .sort((a, b) => Number(a.isGM) - Number(b.isGM))[0];
+
+        // Check reach separately: if a trade would be possible except for it being out of reach, proceed no
+        // further in item-drop workflow
+        const args = {
+            self: { actor: selfActor, item, gift: event.shiftKey },
+            trader: { user: traderUser, actor: recipient },
+        };
+        if (!TradeDialog.canTrade(args)) return false;
+        const checkReach = game.pf2e.settings.automation.reachEnforcement.has("merchants");
+        if (checkReach) {
+            const traderTokens = recipient.getActiveTokens(true, false);
+            const selfReach = selfActor.system.attributes.reach.manipulate;
+            const traderReach = args.trader.actor.system.attributes.reach.manipulate;
+            const inReach = selfActor.getActiveTokens(true, false).some((selfToken) =>
+                traderTokens.some((traderToken) => {
+                    const distance = selfToken.distanceTo(traderToken);
+                    return selfReach >= distance && traderReach >= distance;
+                }),
+            );
+            if (!inReach) return true;
+        }
+        TradeDialog.requestTrade(args);
+        return true;
     }
 
     /** Handle creating a new Owned Item for the actor using initial data defined in the HTML dataset */
@@ -1395,26 +1430,12 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
 
     /** Render confirmation dialog to sell all treasure */
     async #onClickSellAllTreasure(): Promise<void> {
-        const content = await fa.handlebars.renderTemplate(
-            `systems/${SYSTEM_ID}/templates/actors/sell-all-treasure-dialog.hbs`,
-        );
-
-        new foundry.appv1.api.Dialog({
-            title: _loc("PF2E.SellAllTreasureTitle"),
-            content,
-            buttons: {
-                yes: {
-                    icon: fa.fields.createFontAwesomeIcon("check").outerHTML,
-                    label: "Yes",
-                    callback: async () => this.actor.inventory.sellAllTreasure(),
-                },
-                cancel: {
-                    icon: fa.fields.createFontAwesomeIcon("times").outerHTML,
-                    label: "Cancel",
-                },
-            },
-            default: "cancel",
-        }).render(true);
+        const confirmed = await foundry.applications.api.DialogV2.confirm({
+            id: "sell-all-treasure-{id}",
+            window: { title: "PF2E.SellAllTreasureTitle" },
+            content: `<p class="note">${_loc("PF2E.SellAllTreasureQuestion")}</p>`,
+        });
+        if (confirmed) await this.actor.inventory.sellAllTreasure();
     }
 
     protected openTagSelector(anchor: HTMLElement, options: Partial<TagSelectorOptions> = {}): void {

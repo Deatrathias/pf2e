@@ -186,9 +186,15 @@
                     },
                     "feat:ancestral-weapon-familiarity"
                 ]
+            },
+            {
+                "acuity": "imprecise",
+                "key": "Sense",
+                "range": 30,
+                "selector": "scent"
             }
         ],
-        "size": "med",
+        "size": "sm",
         "speed": 20,
         "traits": {
             "rarity": "common",

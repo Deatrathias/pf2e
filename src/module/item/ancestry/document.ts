@@ -3,7 +3,6 @@ import { SenseData } from "@actor/creature/index.ts";
 import { CreatureTrait } from "@actor/creature/types.ts";
 import { ActorSizePF2e } from "@actor/data/size.ts";
 import { AttributeString } from "@actor/types.ts";
-import type { DatabaseUpdateCallbackOptions } from "@common/abstract/_types.d.mts";
 import { ABCItemPF2e, type FeatPF2e } from "@item";
 import { Size } from "@module/data.ts";
 import { sluggify } from "@util";
@@ -39,7 +38,9 @@ class AncestryPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends 
 
     /** Returns all flaws enforced by this ancestry normally */
     get lockedFlaws(): AttributeString[] {
-        return Object.values(this.system.flaws).flatMap((f) => f.selected ?? []);
+        return Object.values(this.system.flaws)
+            .filter((f) => f.value.length === 1)
+            .flatMap((f) => f.selected ?? []);
     }
 
     /** Include all ancestry features in addition to any with the expected location ID */
@@ -56,14 +57,15 @@ class AncestryPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends 
 
     override prepareBaseData(): void {
         super.prepareBaseData();
-        for (const boost of Object.values(this.system.boosts)) {
-            if (boost.value.length === 1) {
-                boost.selected = boost.value[0];
-            }
-        }
-        for (const flaw of Object.values(this.system.flaws)) {
-            if (flaw.value.length === 1) {
-                flaw.selected = flaw.value[0];
+        for (const slots of [this.system.boosts, this.system.flaws]) {
+            for (const slot of Object.values(slots)) {
+                // `prepareActorData` applies any selection, so clear ones the slot no longer offers
+                if (slot.selected && !slot.value.includes(slot.selected)) {
+                    slot.selected = null;
+                }
+                if (slot.value.length === 1) {
+                    slot.selected = slot.value[0];
+                }
             }
         }
     }
@@ -72,7 +74,7 @@ class AncestryPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends 
     override prepareActorData(this: AncestryPF2e<CharacterPF2e>): void {
         const actor = this.actor;
         if (!actor.isOfType("character")) {
-            console.error("PF2e System | Only a character can have an ancestry");
+            console.error(`${SYSTEM_NAME} System | Only a character can have an ancestry`);
             return;
         }
 
@@ -110,12 +112,10 @@ class AncestryPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends 
             }
         }
 
-        // Add voluntary boost and flaws (if they exist)
-        if (this.system.voluntary) {
-            const { boost, flaws } = this.system.voluntary;
-            if (boost) build.attributes.boosts.ancestry.push(boost);
-            build.attributes.flaws.ancestry.push(...flaws);
-        }
+        // Add voluntary flaws, and the boost they grant in legacy mode
+        const { legacy, boost, flaws } = this.system.voluntary;
+        if (legacy && boost) build.attributes.boosts.ancestry.push(boost);
+        build.attributes.flaws.ancestry.push(...flaws);
 
         // Add languages
         build.languages.max += this.system.additionalLanguages.count;
@@ -153,35 +153,6 @@ class AncestryPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends 
         for (const trait of this.traits) {
             actor.rollOptions.all[`self:trait:${trait}`] = true;
         }
-    }
-
-    /** Ensure certain fields are integers. */
-    protected override _preUpdate(
-        changed: DeepPartial<this["_source"]>,
-        options: DatabaseUpdateCallbackOptions,
-        user: fd.BaseUser,
-    ): Promise<boolean | void> {
-        if (!changed.system) return super._preUpdate(changed, options, user);
-
-        const additionalLanguages = changed.system.additionalLanguages;
-        if (additionalLanguages?.count !== undefined) {
-            additionalLanguages.count = Math.floor(Math.clamp(Number(additionalLanguages.count) || 0, 0, 99));
-        }
-
-        if (changed.system.hands !== undefined) {
-            changed.system.hands = Math.floor(Math.clamp(changed.system.hands || 0, 0, 12) / 2) * 2;
-        }
-
-        if (changed.system.hp !== undefined) {
-            changed.system.hp = Math.clamp(Math.floor(changed.system.hp / 2) * 2, 4, 12);
-        }
-
-        for (const fieldName of ["speed", "reach"] as const) {
-            if (changed.system[fieldName] === undefined) continue;
-            changed.system[fieldName] = Math.clamp(Math.ceil(changed.system[fieldName] / 5) * 5, 0, 100);
-        }
-
-        return super._preUpdate(changed, options, user);
     }
 }
 

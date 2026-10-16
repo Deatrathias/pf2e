@@ -1,7 +1,8 @@
-import { ActorAlliance, ActorDimensions, ActorInstances, ApplyDamageParams, AuraData, SaveType } from "@actor/types.ts";
+import type { RollRole } from "@actor/roll-context/types.ts";
+import { ActorAlliance, ActorInstances, ApplyDamageParams, AuraData, SaveType } from "@actor/types.ts";
 import type { ToCompendiumOptions } from "@client/_types.d.mts";
 import type { DialogV2Configuration } from "@client/applications/api/dialog.d.mts";
-import type { ActorUUID } from "@client/documents/_module.d.mts";
+import type { ActiveEffectChangeData, ActorUUID } from "@client/documents/_module.d.mts";
 import type { DocumentConstructionContext } from "@common/_types.d.mts";
 import type {
     DatabaseCreateOperation,
@@ -41,6 +42,8 @@ import {
 } from "@module/rules/helpers.ts";
 import type { RuleElementSynthetics } from "@module/rules/index.ts";
 import type { RuleElement } from "@module/rules/rule-element/base.ts";
+import type { ChoiceSetSource } from "@module/rules/rule-element/choice-set/data.ts";
+import { ChoiceSetRuleElement } from "@module/rules/rule-element/choice-set/rule-element.ts";
 import type { RollOptionRuleElement } from "@module/rules/rule-element/roll-option/rule-element.ts";
 import type { UserPF2e } from "@module/user/document.ts";
 import type { ScenePF2e } from "@scene/document.ts";
@@ -214,19 +217,6 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
     }
 
     /**
-     * With the exception of vehicles, actor heights aren't specified. For the purpose of three-dimensional
-     * token-distance measurement, however, the system will generally treat actors as cubes.
-     */
-    get dimensions(): ActorDimensions {
-        const size = this.system.traits?.size ?? new ActorSizePF2e({ value: "med" });
-        return {
-            length: size.long,
-            width: size.wide,
-            height: Math.min(size.long, size.wide),
-        };
-    }
-
-    /**
      * Whether the actor can see, given its token placement in the current scene.
      * A meaningful implementation is found in `CreaturePF2e`.
      */
@@ -387,7 +377,7 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
     }
 
     /** Get roll options from this actor's effects, traits, and other properties */
-    getSelfRollOptions(prefix: "self" | "target" | "origin" = "self"): string[] {
+    getSelfRollOptions(prefix: "self" | RollRole = "self"): string[] {
         const { rollOptions } = this;
         return Object.keys(rollOptions.all).flatMap((o) =>
             o.startsWith("self:") && rollOptions.all[o] ? o.replace(/^self/, prefix) : [],
@@ -496,6 +486,17 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
 
                 for (const alteration of data.alterations) {
                     alteration.applyTo(source);
+                }
+
+                const tempEffect = new ItemProxyPF2e(source, { parent: this });
+                const rules = tempEffect.prepareRuleElements({ suppressWarnings: true });
+                for (const [flag, selection] of Object.entries(data.preselectChoices)) {
+                    const rule = rules.find(
+                        (r): r is ChoiceSetRuleElement => r instanceof ChoiceSetRuleElement && r.flag === flag,
+                    );
+                    if (!rule) continue;
+                    const ruleSource = source.system.rules[rules.indexOf(rule)] as ChoiceSetSource;
+                    ruleSource.selection = selection;
                 }
 
                 toCreate.push(source);
@@ -736,6 +737,7 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
             damageAlterations: {},
             damageDice: { damage: [] },
             degreeOfSuccessAdjustments: {},
+            opposingDegreeOfSuccessAdjustments: { origin: {}, target: {} },
             dexterityModifierCaps: [],
             itemAlterations: [],
             modifierAdjustments: { all: [], damage: [] },
@@ -820,7 +822,7 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
         details.level.value = Math.floor(details.level.value) || 0;
 
         const traits: ActorTraitsData<string> | undefined = this.system.traits;
-        if (traits?.size) traits.size = new ActorSizePF2e(traits.size);
+        if (R.isPlainObject(traits?.size)) traits.size = new ActorSizePF2e(traits.size);
 
         // Setup the basic structure of pf2e flags with roll options
         this.flags[SYSTEM_ID] = fu.mergeObject(this.flags[SYSTEM_ID] ?? {}, {
@@ -854,6 +856,42 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
         for (const rule of this.rules) {
             rule.onApplyActiveEffects?.();
         }
+    }
+
+    override applyActiveEffects(phase: string): void {
+        super.applyActiveEffects(phase);
+        if (phase !== "final") return;
+
+        // Create all changes during the final phase for the actor but initial phase for tokens: rule elements override
+        // by using the final phase for tokens
+        const changes = this.tokenActiveEffectChanges.initial ?? [];
+        const baseChange: ActiveEffectChangeData = { type: "override", priority: 50, phase: "initial" };
+
+        // Set disposition according to actor alliance
+        const dispositionChange = { ...baseChange, key: "disposition" };
+        switch (this.alliance) {
+            case "party":
+                dispositionChange.value = CONST.TOKEN_DISPOSITIONS.FRIENDLY;
+                break;
+            case "opposition":
+                dispositionChange.value = CONST.TOKEN_DISPOSITIONS.HOSTILE;
+                break;
+            default:
+                dispositionChange.value = CONST.TOKEN_DISPOSITIONS.NEUTRAL;
+        }
+        changes.push(dispositionChange);
+
+        const size = this.system.traits?.size;
+        if (!size) return;
+        const dimensions = size.tokenDimensions;
+        const scale = size.value === "sm" ? 0.8 : 1;
+        changes.push(
+            { ...baseChange, key: "width", value: dimensions.width },
+            { ...baseChange, key: "height", value: dimensions.height },
+            { ...baseChange, key: "depth", value: dimensions.depth },
+            { ...baseChange, key: "texture.scaleX", value: scale },
+            { ...baseChange, key: "texture.scaleY", value: scale },
+        );
     }
 
     /** Prepare data among owned items as well as actor-data preparation performed by items */
@@ -1291,13 +1329,25 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
             persistentDamage.length ? await this.createEmbeddedDocuments("Item", persistentDamage) : []
         ) as ConditionPF2e<this>[];
 
+        const persistentDamages = game.i18n.getListFormatter({ style: "long", type: "conjunction" }).format(
+            result.persistent.map((instance) => {
+                const formula = instance.head.expression;
+                const damageType = _loc(CONFIG.PF2E.damageRollFlavors[instance.type]);
+                return instance.type === "bleed"
+                    ? _loc(`${locPrefix}.PersistentEntry.bleed`, { formula, damageType })
+                    : _loc(`${locPrefix}.PersistentEntry.default`, { formula, damageType });
+            }),
+        );
+        const persistentOnly =
+            persistentCreated.length > 0 && (!hitPoints.max || finalDamage - damageAbsorbedByActor === 0);
+
         // Send chat message
         const hpStatement = ((): string | null => {
             if (isHealing) {
                 return hitPoints.value === hitPoints.max ? `${locPrefix}.AtFullHealth` : `${locPrefix}.HealedForN`;
             }
             if (!hitPoints.max || finalDamage - damageAbsorbedByActor === 0) {
-                return persistentCreated ? null : `${locPrefix}.TakesNoDamage`;
+                return persistentOnly ? `${locPrefix}.StartsTakingDamage` : `${locPrefix}.TakesNoDamage`;
             }
             return damageAbsorbedByShield > 0
                 ? damageResult.totalApplied > 0
@@ -1324,6 +1374,7 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
                 .map((s) =>
                     _loc(s, {
                         actor: token.name.replace(/[<>]/g, ""),
+                        persistentDamages: persistentDamages,
                         hpDamage: Math.abs(damageResult.totalApplied),
                         absorbedDamage: damageAbsorbedByShield,
                         shieldDamage,
@@ -1347,7 +1398,9 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
             {
                 breakdown,
                 statements,
-                persistent: persistentCreated.map((p) => p.system.persistent?.damage.formula).filter(R.isDefined),
+                persistent: persistentOnly
+                    ? []
+                    : persistentCreated.map((p) => p.system.persistent?.damage.formula).filter(R.isDefined),
                 iwr: {
                     applications: result.applications,
                     visibility: this.hasPlayerOwner ? "all" : "gm",
@@ -1939,6 +1992,20 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
             for (const token of this.getActiveTokens(true, true)) {
                 token.reset();
             }
+        }
+
+        // Recalculate encounter metrics if this actor's level, adjustment, or alliance changed
+        const detailsChanged = changed.system?.details ?? {};
+        const attributesChanged = changed.system?.attributes ?? {};
+        if (
+            game.combats.size > 0 &&
+            ("level" in detailsChanged || "alliance" in detailsChanged || "adjustment" in attributesChanged)
+        ) {
+            const encounters = game.combats.filter((c) => c.combatants.some((combatant) => combatant.actor === this));
+            for (const encounter of encounters) {
+                encounter.metrics = encounter.analyze();
+            }
+            if (encounters.length > 0) ui.combat.render({ parts: ["metrics"] });
         }
 
         // Remove the death overlay if present upon hit points being increased

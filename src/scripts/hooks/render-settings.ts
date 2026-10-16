@@ -1,6 +1,6 @@
 import { LegalNotice } from "@module/apps/legal-notice.ts";
-import { MigrationSummary } from "@module/apps/migration-summary.ts";
-import { ErrorPF2e, createHTMLElement, htmlQuery } from "@util";
+import { MigrationSummary } from "@module/apps/migration-summary/app.ts";
+import { createHTMLElement, ErrorPF2e, htmlQuery } from "@util";
 
 /** Attach system buttons and other knickknacks to the settings sidebar */
 export const RenderSettings = {
@@ -9,7 +9,7 @@ export const RenderSettings = {
             // Additional system information resources
             const systemRow = htmlQuery(html, "section.info .system");
             const systemInfo = systemRow?.cloneNode(false);
-            if (!(systemInfo instanceof HTMLElement)) {
+            if (!(systemInfo && fu.isElementInstanceOf(systemInfo, HTMLElement))) {
                 throw ErrorPF2e("Unexpected error attaching system information to settings sidebar");
             }
 
@@ -66,7 +66,9 @@ export const RenderSettings = {
                 const shootButton = document.createElement("button");
                 shootButton.type = "button";
                 shootButton.append(createIcon("wrench"), _loc("PF2E.Migrations.Troubleshooting"));
-                shootButton.addEventListener("click", () => new MigrationSummary({ troubleshoot: true }).render(true));
+                shootButton.addEventListener("click", () =>
+                    new MigrationSummary({ troubleshoot: true }).render({ force: true }),
+                );
                 pf2eSettings.append(shootButton);
             }
         });

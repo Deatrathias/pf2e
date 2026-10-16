@@ -27,9 +27,9 @@ import type {
     HitPointsStatistic,
     StrikeData,
 } from "@actor/data/base.ts";
-import { InitiativeTraceData } from "@actor/initiative.ts";
+import type { InitiativeTraceData } from "@actor/initiative.ts";
 import type { Modifier, StatisticModifier } from "@actor/modifiers.ts";
-import type { ActorAlliance, SaveType, SkillSlug } from "@actor/types.ts";
+import type { ActorAlliance, SaveType } from "@actor/types.ts";
 import type { MeleePF2e } from "@item";
 import type { PublicationData, ValueAndMax } from "@module/data.ts";
 import type { RawPredicate } from "@system/predication.ts";
@@ -51,7 +51,8 @@ interface NPCSystemSource extends CreatureSystemSource {
     /** Any special attributes for this NPC, such as AC or health. */
     attributes: NPCAttributesSource;
 
-    skills: Partial<Record<SkillSlug, NPCSkillSource>>;
+    /** Keyed by skill slug; `string` rather than `SkillSlug` so system-specific skills are covered. */
+    skills: Partial<Record<string, NPCSkillSource>>;
 
     /** Modifier of the perception statistic */
     perception: NPCPerceptionSource;
@@ -75,7 +76,8 @@ interface NPCSystemSource extends CreatureSystemSource {
 }
 
 interface NPCSkillSource {
-    base: number;
+    /** Null defers to the skill's attribute modifier */
+    base: number | null;
     /** Any special restriction or clarification */
     note?: string;
     /** All saved special skill modifiers */
@@ -107,8 +109,9 @@ interface NPCAttributesSource extends Required<ActorAttributesSource> {
     };
 }
 
-interface NPCHitPointsSource extends Required<CreatureHitPointsSource> {
+interface NPCHitPointsSource extends Required<Omit<CreatureHitPointsSource, "tempSource">> {
     details: string;
+    tempSource?: string;
 }
 
 interface NPCPerceptionSource {
@@ -172,6 +175,8 @@ interface NPCSystemData extends Omit<NPCSystemSource, "attributes" | "perception
 
 interface NPCPerceptionData extends CreaturePerceptionData {
     mod: number;
+    details: string;
+    rank?: never;
 }
 
 interface NPCAttributes extends Omit<NPCAttributesSource, AttributesSourceOmission>, CreatureAttributes {
@@ -252,12 +257,14 @@ interface NPCSpecialSkill extends NPCSpecialSkillSource {
 
 /** Skill data with a "base" value and whether the skill should be rendered (visible) */
 interface NPCSkillData extends NPCSkillSource, AttributeBasedTraceData {
+    /** Resolved during data preparation */
+    base: number;
     mod: number;
     visible: boolean;
     /** Is this skill a Lore skill? */
-    lore?: boolean;
+    lore: boolean;
     /** If this is a lore skill, what item it came from */
-    itemId?: string;
+    itemId: string | null;
     special: NPCSpecialSkill[];
 }
 

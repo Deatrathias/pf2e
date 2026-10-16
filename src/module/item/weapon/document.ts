@@ -15,7 +15,6 @@ import type { PhysicalItemConstructionContext } from "@item/physical/document.ts
 import {
     IdentificationStatus,
     MystifiedData,
-    RUNE_DATA,
     checkPhysicalItemSystemChange,
     getPropertyRuneSlots,
 } from "@item/physical/index.ts";
@@ -185,6 +184,15 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
             this.system.splashDamage.value > 0 ||
             !!baseDamage.persistent?.number
         );
+    }
+
+    /**
+     * The actor-owned item backing this weapon. This may be the weapon itself, its subitem entry if attached to
+     * another item, the original of a clone (alt usages, shield-generated weapons), or the granting item in the
+     * case of a synthetic weapon from a rule element.
+     */
+    get realItem(): ItemPF2e | null {
+        return this.parentItem?.subitems.get(this.id) ?? this.actor?.items.get(this.id) ?? null;
     }
 
     get ammo(): AmmoPF2e<TParent> | WeaponPF2e<TParent> | null {
@@ -442,7 +450,7 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
         const strikingDice = ABP.isEnabled(actor) ? ABP.getStrikingDice(actor?.level ?? 0) : this.system.runes.striking;
         const gradeData = CONFIG.PF2E.weaponImprovements[this.system.grade ?? "commercial"];
         this.system.damage.dice =
-            inherentDiceNumber === 1 && !this.flags[SYSTEM_ID].battleForm
+            inherentDiceNumber === 1 && !this.flags[SYSTEM_ID].battleForm && !this.flags[SYSTEM_ID].fixedAttack
                 ? Math.max(gradeData.dice, inherentDiceNumber + strikingDice)
                 : this.system.damage.dice;
 
@@ -479,7 +487,9 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
             }
 
             // Determine capacity from traits. Weapons that load magazines cannot load more than one
-            if (!existingTypeData?.magazine) {
+            if (existingTypeData?.magazine) {
+                this.system.ammo.capacity = 1;
+            } else {
                 const capacityTrait = this.system.traits.value.find((t) => /^capacity-\d+$/.test(t));
                 const capacityFromTrait = capacityTrait ? Number(capacityTrait.replace("capacity-", "")) : null;
                 const capacityFromDoubleBarrel = this.system.traits.value.includes("double-barrel") ? 2 : null;
@@ -619,6 +629,7 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
 
     override clone(data?: Record<string, unknown>, context?: WeaponCloneContext): this {
         const clone = super.clone(data, context);
+        if (this.rule) clone.rule = this.rule;
         if (context?.altUsage && clone instanceof WeaponPF2e) {
             clone.altUsageType = context.altUsage;
             const comboSibling = this.system.traits.value.includes("combination") ? this : this.comboSibling;
@@ -630,7 +641,7 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
 
     /** Generate a clone of this thrown melee weapon with its thrown usage overlain, or `null` if not applicable */
     private toThrownUsage(): this | null {
-        const traits = this._source.system.traits.value;
+        const traits = this.system.traits.value;
         const thrownTrait = traits.find((t) => /^thrown-\d{1,3}$/.test(t));
         if (this.isRanged || !thrownTrait) return null;
 
@@ -653,7 +664,7 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
         if (!meleeUsage || this.flags[SYSTEM_ID].comboMeleeUsage) return null;
 
         const traitToggles = {
-            module: { selected: meleeUsage.traitToggles.modular },
+            modular: { selected: meleeUsage.traitToggles.modular },
             versatile: { selected: meleeUsage.traitToggles.versatile },
         };
 
@@ -707,17 +718,6 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
                 category: null,
             };
         })();
-        const fromPropertyRunes = this.system.runes.property
-            .flatMap((r) => RUNE_DATA.weapon.property[r].damage?.additional ?? [])
-            .map((additional): NPCAttackDamage => {
-                const [category = null, damage] =
-                    "diceNumber" in additional
-                        ? [additional.category, `${additional.diceNumber}${additional.dieSize}`]
-                        : [additional.damageCategory, additional.modifier.toString()];
-                const damageType = additional.damageType ?? baseDamage.damageType;
-                return { damage, damageType, category };
-            });
-
         const reachTraitToNPCReach = {
             tiny: null,
             sm: "reach-10",
@@ -807,7 +807,7 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
                     // Unless there is a fixed attack modifier, give an attack bonus approximating a high-threat NPC
                     value: this.flags[SYSTEM_ID].fixedAttack || Math.round(1.5 * this.actor.level + 7),
                 },
-                damageRolls: [baseDamage, splashDamage, fromPropertyRunes, persistentDamage]
+                damageRolls: [baseDamage, splashDamage, persistentDamage]
                     .flat()
                     .reduce(
                         (rolls: Record<string, NPCAttackDamage>, roll) =>
@@ -829,6 +829,7 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
         attack.category = this.category;
         attack.group = this.group;
         attack.baseType = this.baseType;
+        attack.syncWeaponFeatures(this);
 
         return [attack, ...this.getAltUsages({ recurse: false }).flatMap((u) => u.toNPCAttacks())];
     }

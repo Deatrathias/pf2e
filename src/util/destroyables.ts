@@ -26,6 +26,11 @@ class DestroyableManager {
         this.#bodyObserver.observe(document.body, DestroyableManager.#OBSERVE_OPTIONS);
     }
 
+    /** Also observe a detached window's body, which apps move into when popped out */
+    observeDocument(doc: Document): void {
+        this.#bodyObserver.observe(doc.body, DestroyableManager.#OBSERVE_OPTIONS);
+    }
+
     observe(destroyable: Destroyable): void {
         const destroyableEl =
             destroyable instanceof Sortable
@@ -77,7 +82,8 @@ class DestroyableManager {
         for (const mutation of mutations) {
             for (const removedNode of mutation.removedNodes) {
                 for (const [node, context] of this.#appObservers.entries()) {
-                    if (!removedNode.contains(node)) {
+                    // Popping a window out or back in moves it to another document rather than removing it
+                    if (!removedNode.contains(node) || node.isConnected) {
                         continue;
                     }
                     for (const element of context.elements) {
@@ -103,10 +109,7 @@ interface MutationObserverContext {
 }
 
 type Destroyable =
-    | Tagify<{ id: string; value: string }>
-    | Tagify<Tagify.TagData>
-    | Sortable
-    | JQueryTooltipster.ITooltipsterInstance;
+    Tagify<{ id: string; value: string }> | Tagify<Tagify.TagData> | Sortable | JQueryTooltipster.ITooltipsterInstance;
 
 function createSortable(list: HTMLElement, options: Sortable.Options): Sortable {
     const sortable = new Sortable(list, Object.assign(options, { noJQuery: true }));

@@ -21,10 +21,18 @@
         },
         "rules": [
             {
+                "itemId": "{item|id}",
+                "key": "ItemAlteration",
+                "mode": "override",
+                "property": "name",
+                "value": "PF2E.NPCAbility.Woodblessed.LuminantAura.Name"
+            },
+            {
                 "key": "TokenLight",
                 "value": {
                     "bright": 0,
                     "color": "#53d251",
+                    "coloration": 101,
                     "dim": 20
                 }
             }

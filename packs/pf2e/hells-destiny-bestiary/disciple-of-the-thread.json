@@ -41,6 +41,9 @@
         },
         {
             "_id": "aPWJBcWVsopkN0We",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.spells-srd.Item.W37iBXLsY2trJ1rS"
+            },
             "folder": "wnvibtD90h7CStDC",
             "img": "systems/pf2e/icons/spells/weapon-surge.webp",
             "name": "Weapon Surge",
@@ -98,6 +101,9 @@
         },
         {
             "_id": "rG567t25Rje4AoQJ",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.equipment-srd.Item.dDIPA1WE9ESF67EB"
+            },
             "img": "icons/equipment/chest/shirt-collared-pink.webp",
             "name": "Explorer's Clothing",
             "sort": 300000,
@@ -166,7 +172,10 @@
         },
         {
             "_id": "cJiy72BniUGSmh3y",
-            "img": "systems/pf2e/icons/equipment/adventuring-gear/artisan-tools.webp",
+            "_stats": {
+                "compendiumSource": "Compendium.pf2e.equipment-srd.Item.0QgniSjpzksm5riV"
+            },
+            "img": "icons/tools/medical/toolkit-surgical-pink.webp",
             "name": "Tailoring Toolkit (Sterling)",
             "sort": 400000,
             "system": {
@@ -230,22 +239,23 @@
             "type": "equipment"
         },
         {
-            "_id": "ppQIzLMuymNNJpHl",
+            "_id": "PKtWwBVzFf4JjvQT",
             "img": "icons/sundries/misc/key-copper.webp",
-            "name": "Shop Key",
+            "name": "Key",
             "sort": 500000,
             "system": {
                 "baseItem": null,
                 "bulk": {
                     "value": 0.1
                 },
-                "category": null,
                 "containerId": null,
                 "description": {
+                    "gm": "<p>Disciple of the thread's shop key.</p>",
                     "value": ""
                 },
                 "equipped": {
-                    "carryType": "worn"
+                    "carryType": "worn",
+                    "invested": null
                 },
                 "hardness": 0,
                 "hp": {
@@ -260,7 +270,6 @@
                     "type": null
                 },
                 "price": {
-                    "per": 1,
                     "value": {}
                 },
                 "publication": {
@@ -272,13 +281,15 @@
                 "rules": [],
                 "size": "med",
                 "slug": null,
-                "temporary": false,
                 "traits": {
                     "rarity": "common",
                     "value": []
+                },
+                "usage": {
+                    "value": "held-in-one-hand"
                 }
             },
-            "type": "treasure"
+            "type": "equipment"
         },
         {
             "_id": "3k6ORJ2kMtYabmwq",

@@ -4190,7 +4190,7 @@
                         "img": "icons/creatures/mammals/bull-horns-eyes-glowin-orange.webp",
                         "level": 17,
                         "name": "Resolve",
-                        "uuid": "Compendium.pf2e.classfeatures.Item.Resolve"
+                        "uuid": "Compendium.pf2e.classfeatures.Item.Twofold Will"
                     },
                     "q4i1v": {
                         "img": "systems/pf2e/icons/features/classes/witch-spellcasting.webp",
@@ -4811,6 +4811,12 @@
                         "mode": "upgrade",
                         "path": "system.skills.nature.rank",
                         "value": 1
+                    },
+                    {
+                        "key": "ActiveEffectLike",
+                        "mode": "override",
+                        "path": "flags.system.witch.patronSkill",
+                        "value": "nature"
                     }
                 ],
                 "slug": "wild-patron",

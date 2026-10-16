@@ -13,7 +13,7 @@ async function repair(options: RepairActionOptions): Promise<void> {
 
     // ensure specified item is a valid repair target
     if (!(item instanceof ItemPF2e)) {
-        console.warn("PF2e System | No item selected to repair: aborting");
+        console.warn(`${SYSTEM_NAME} System | No item selected to repair: aborting`);
         return;
     }
     if (!item.isOfType("physical")) {
@@ -108,7 +108,7 @@ async function onRepairChatCardEvent(
     const itemUuid = card.dataset.itemUuid;
     const item = await fromUuid(itemUuid ?? "");
     const button = event.currentTarget;
-    if (!(item instanceof PhysicalItemPF2e) || !(button instanceof HTMLElement)) {
+    if (!(item instanceof PhysicalItemPF2e) || !(button && fu.isElementInstanceOf(button, HTMLElement))) {
         return;
     }
 

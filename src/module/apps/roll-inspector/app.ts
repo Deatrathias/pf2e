@@ -2,6 +2,7 @@ import type { RawDamageDice, RawModifier } from "@actor/modifiers.ts";
 import type { ApplicationConfiguration } from "@client/applications/_types.d.mts";
 import type { ChatContextFlag } from "@module/chat-message/data.ts";
 import { ChatMessagePF2e } from "@module/chat-message/document.ts";
+import { TextSearch } from "@module/sheet/components/text-search.svelte.ts";
 import { SvelteApplicationMixin, SvelteApplicationRenderContext } from "@module/sheet/mixin.svelte.ts";
 import * as R from "remeda";
 import Root from "./app.svelte";
@@ -19,9 +20,11 @@ class RollInspector extends SvelteApplicationMixin(fa.api.ApplicationV2) {
         },
     };
 
-    protected override root = Root;
+    protected root = Root;
 
     message: ChatMessagePF2e;
+
+    #search = new TextSearch<RollOptionDoc>({ fields: ["id"], matcher: "substring", minLength: 1 });
 
     constructor(options: DeepPartial<ApplicationConfiguration> & { message: ChatMessagePF2e }) {
         super(options);
@@ -36,28 +39,37 @@ class RollInspector extends SvelteApplicationMixin(fa.api.ApplicationV2) {
 
         const contextualOptions = context && "contextualOptions" in context ? context.contextualOptions : {};
         const rollOptions = R.sortBy(context?.options?.sort() ?? [], (o) => o.includes(":"));
+        const contextualLists = Object.entries(contextualOptions ?? {})
+            .map(([key, value]) => ({
+                header: _loc(`PF2E.ChatRollDetails.ContextualOptions.${key}`),
+                options: value ?? [],
+            }))
+            .filter((o) => !!o.options.length);
+        const searchable = new Set([...rollOptions, ...contextualLists.flatMap((l) => l.options)]);
+        this.#search.index([...searchable].map((id) => ({ id })));
 
         return {
             foundryApp: this,
+            search: this.#search,
             state: {
                 context,
                 dice: this.message.flags[SYSTEM_ID].dice ?? [],
                 domains: context?.domains?.sort() ?? [],
                 modifiers: this.message.flags[SYSTEM_ID].modifiers ?? [],
                 rollOptions,
-                contextualOptions: Object.entries(contextualOptions ?? {})
-                    .map(([key, value]) => ({
-                        header: _loc(`PF2E.ChatRollDetails.ContextualOptions.${key}`),
-                        options: value ?? [],
-                    }))
-                    .filter((o) => !!o.options.length),
+                contextualOptions: contextualLists,
             },
         };
     }
 }
 
 interface RollInspectorContext extends SvelteApplicationRenderContext {
+    search: TextSearch<RollOptionDoc>;
     state: RollInspectorState;
+}
+
+interface RollOptionDoc {
+    id: string;
 }
 
 interface RollInspectorState {
@@ -70,4 +82,4 @@ interface RollInspectorState {
 }
 
 export { RollInspector };
-export type { RollInspectorContext };
+export type { RollInspectorContext, RollInspectorState };

@@ -36,13 +36,11 @@
         "publication": {
             "license": "ORC",
             "remaster": true,
-            "title": "Pathfinder Hellbreakers Player’s Guide"
+            "title": "Pathfinder Hellbreakers Player's Guide"
         },
         "rules": [],
         "trainedSkills": {
-            "lore": [
-                "Lore skill pertaining to your place of origin"
-            ],
+            "lore": [],
             "value": [
                 "diplomacy"
             ]

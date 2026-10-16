@@ -51,7 +51,7 @@ class HTMLTagifyTagsElement extends foundry.applications.elements.AbstractFormIn
         } catch (error) {
             if (error instanceof Error) {
                 console.error(
-                    new Error(`PF2e System | Invalid value for HTMLTagifyTagsElement: ${value}`, {
+                    new Error(`${SYSTEM_NAME} System | Invalid value for HTMLTagifyTagsElement: ${value}`, {
                         cause: error,
                     }),
                 );
@@ -82,7 +82,7 @@ class HTMLTagifyTagsElement extends foundry.applications.elements.AbstractFormIn
     override _activateListeners(): void {
         this._primaryInput.addEventListener("change", (event) => {
             const target = event.target;
-            if (target instanceof HTMLInputElement) {
+            if (target && fu.isElementInstanceOf(target, HTMLInputElement)) {
                 this.value = target.value || "[]";
             }
         });

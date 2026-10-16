@@ -1,10 +1,10 @@
 import type { CompendiumUUID } from "@client/utils/helpers.d.mts";
 import type { ConditionSource } from "@item/base/data/index.ts";
-import { svelte as sveltePlugin } from "@sveltejs/vite-plugin-svelte";
+import { svelte as sveltePlugin, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { execSync } from "child_process";
-import esbuild from "esbuild";
 import fs from "fs-extra";
 import { globSync } from "glob";
+import { minify } from "oxc-minify";
 import path from "path";
 import Peggy from "peggy";
 import * as Vite from "vite";
@@ -14,8 +14,9 @@ import { sluggify } from "./src/util/misc.ts";
 import pf2eManifest from "./system.pf2e.json" with { type: "json" };
 import sf2eManifest from "./system.sf2e.json" with { type: "json" };
 
+const ROOT_DIR = import.meta.dirname;
 const [SYSTEM_ID, systemJSON] =
-    process.env.SYSTEM_ID === "pf2e" ? (["pf2e", pf2eManifest] as const) : (["sf2e", sf2eManifest] as const);
+    process.env.SYSTEM_ID === "sf2e" ? (["sf2e", sf2eManifest] as const) : (["pf2e", pf2eManifest] as const);
 const CONDITION_SOURCES = ((): ConditionSource[] => {
     const output = execSync(`pnpm run build:conditions --system=${SYSTEM_ID}`, { encoding: "utf-8" });
     return JSON.parse(output.slice(output.indexOf("[")));
@@ -25,14 +26,14 @@ const EN_JSON = JSON.parse(fs.readFileSync("./static/lang/en.json", { encoding: 
 /** Get UUID redirects from JSON file, converting names to IDs. */
 function getUuidRedirects({ systemId }: { systemId: SystemId }): Record<CompendiumUUID, CompendiumUUID> {
     const redirectJSON = JSON.parse(
-        fs.readFileSync(path.resolve(__dirname, "build", "uuid-redirects", `${systemId}.json`), "utf-8"),
+        fs.readFileSync(path.resolve(ROOT_DIR, "build", "uuid-redirects", `${systemId}.json`), "utf-8"),
     );
     for (const [from, to] of Object.entries<string>(redirectJSON)) {
         const [, , pack, documentType, name] = to.split(".", 5);
         const packDir = systemJSON.packs
             .find((p) => p.type === documentType && p.name === pack)
             ?.path.replace(/^packs/, `packs/${systemId}`);
-        const dirPath = path.resolve(__dirname, packDir ?? "");
+        const dirPath = path.resolve(ROOT_DIR, packDir ?? "");
         const filename = `${sluggify(name)}.json`;
         const jsonPath = fs.existsSync(path.resolve(dirPath, filename))
             ? path.resolve(dirPath, filename)
@@ -79,7 +80,7 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
     const plugins = [
         checker({ typescript: true }),
         sveltePlugin({
-            preprocess: command === "serve" ? hmrPreprocess : undefined,
+            preprocess: command === "serve" ? [vitePreprocess(), hmrPreprocess] : vitePreprocess(),
         }),
     ];
     const packUUIDPattern = /Compendium\.pf2e\.[^\]]+/g;
@@ -102,15 +103,16 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
                 name: "minify",
                 renderChunk: {
                     order: "post",
-                    handler: async (code, chunk) =>
-                        chunk.fileName.endsWith(".mjs")
-                            ? esbuild.transform(code, {
-                                  keepNames: true,
-                                  minifyIdentifiers: false,
-                                  minifySyntax: true,
-                                  minifyWhitespace: true,
+                    handler: async (code, chunk) => {
+                        console.log(chunk.fileName);
+                        return chunk.fileName.endsWith(".mjs")
+                            ? minify(chunk.fileName, code, {
+                                  module: true,
+                                  compress: { keepNames: { class: true, function: true } },
+                                  mangle: { keepNames: true },
                               })
-                            : code,
+                            : code;
+                    },
                 },
             },
             // Replace pf2e UUIDs with sf2e ones
@@ -173,7 +175,7 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
                 name: "hmr-handler",
                 apply: "serve",
                 handleHotUpdate(context) {
-                    if (context.file.startsWith(outDir)) return;
+                    if (context.file.startsWith(path.resolve(outDir))) return;
                     if (context.file.endsWith("en.json")) {
                         const basePath = context.file.slice(context.file.indexOf("lang/"));
                         console.debug(`Updating lang file at ${basePath}`);
@@ -201,7 +203,7 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
         );
 
         // Add system CSS layer for HMR
-        const mainCss = path.resolve(__dirname, "src/pf2e.ts").split(path.sep).join("/");
+        const mainCss = path.resolve(ROOT_DIR, "src/pf2e.ts").split(path.sep).join("/");
         plugins.push({
             name: "hmr-layers",
             apply: "serve",
@@ -243,6 +245,7 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
         publicDir: "static",
         define: {
             SYSTEM_ID: JSON.stringify(SYSTEM_ID),
+            SYSTEM_NAME: JSON.stringify(SYSTEM_ID === "pf2e" ? "PF2e" : "SF2e"),
             BUILD_MODE: JSON.stringify(buildMode),
             CONDITION_SOURCES: JSON.stringify(CONDITION_SOURCES),
             EN_JSON: JSON.stringify(EN_JSON),
@@ -255,7 +258,6 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
             fh: "foundry.helpers",
             fu: "foundry.utils",
         },
-        esbuild: { keepNames: true },
         resolve: { tsconfigPaths: true },
         build: {
             outDir,
@@ -291,14 +293,20 @@ const config = Vite.defineConfig(({ command, mode }): Vite.UserConfig => {
                     ws: true,
                 },
             },
+            watch: { ignored: ["dist", "packs", "tests"].map((d) => path.resolve(ROOT_DIR, d, "**")) },
         },
         plugins,
         css: {
             devSourcemap: buildMode === "development",
             preprocessorOptions: {
                 scss: {
-                    additionalData: (existing: string) => {
-                        return SYSTEM_ID === "sf2e" ? `${existing}\n@import "sf2e/index";` : existing;
+                    additionalData: (source: string, filename: string) => {
+                        // `sf2e/index` is system-specific styling, layered into the main stylesheet
+                        // entry only. Svelte components are system-agnostic and theme themselves
+                        // through CSS custom properties, so they never need it (and their <style> is
+                        // scoped, which would rewrite its selectors anyway).
+                        if (SYSTEM_ID !== "sf2e" || filename?.includes(".svelte")) return source;
+                        return `${source}\n@import "sf2e/index";`;
                     },
                 },
             },

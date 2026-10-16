@@ -316,11 +316,21 @@
                     }
                 },
                 "description": {
-                    "value": "<p>The target appears to be a gruesome and terrifying creature. The effect is unique to each observer, so a human viewing the target might see a demon with bloody fangs, but a demon observing the target might see a glowing angelic visage. When any creature attempts a hostile action against the target, the creature must attempt a Will save. It is then temporarily immune until the end of its next turn.</p>\n<hr />\n<p><strong>Success</strong> The creature is unaffected.</p>\n<p><strong>Failure</strong> The creature becomes @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2} before using its action.</p>\n<p><strong>Critical Failure</strong> The creature becomes @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2}, and its action fails and is wasted.</p>\n<hr />\n<p><strong>Heightened (8th)</strong> You can target up to 5 creatures. If a creature uses a hostile action or reaction that affects multiple targets simultaneously, it needs to attempt only one save against mask of terror.</p>"
+                    "value": "<p>The target appears to be a gruesome and terrifying creature. The effect is unique to each observer, so a human viewing the target might see a demon with bloody fangs, but a demon observing the target might see a glowing angelic visage.</p>\n<p>When any creature attempts a hostile action against the target, the creature must attempt a Will save. It is then temporarily immune until the end of its next turn.</p>\n<p><strong>Success</strong> The creature is unaffected.</p>\n<p><strong>Failure</strong> The creature becomes @UUID[Compendium.pf2e.conditionitems.Item.Frightened]{Frightened 2} before using its action.</p>\n<p><strong>Critical Failure</strong> The creature becomes frightened 2, and its action fails and is wasted.</p><hr /><p><strong>Heightened (8th)</strong> You can target up to 5 creatures. If a creature uses a hostile action or reaction that affects multiple targets simultaneously, it needs to attempt only one save against <em>mask of terror</em>.</p>"
                 },
                 "duration": {
                     "sustained": false,
                     "value": "1 minute"
+                },
+                "heightening": {
+                    "levels": {
+                        "8": {
+                            "target": {
+                                "value": "up to 5 creatures"
+                            }
+                        }
+                    },
+                    "type": "fixed"
                 },
                 "level": {
                     "value": 7
@@ -329,9 +339,9 @@
                     "value": "sa6rqRzXU6Y37Y0P"
                 },
                 "publication": {
-                    "license": "OGL",
-                    "remaster": false,
-                    "title": "Pathfinder Core Rulebook"
+                    "license": "ORC",
+                    "remaster": true,
+                    "title": "Pathfinder Player Core"
                 },
                 "range": {
                     "value": "30 feet"
@@ -2282,7 +2292,7 @@
                 "compendiumSource": "Compendium.pf2e.equipment-srd.Item.8mhSUxEvNuXDP8Ki"
             },
             "img": "systems/pf2e/icons/equipment/worn-items/other-worn-items/bracers-of-armor.webp",
-            "name": "Bracers of Armor II",
+            "name": "Bands of Force (Greater)",
             "sort": 3100000,
             "system": {
                 "baseItem": null,
@@ -2291,7 +2301,7 @@
                 },
                 "containerId": null,
                 "description": {
-                    "value": "<p>These stiff leather armguards grant you a +2 item bonus to AC and saving throws, and a maximum Dexterity modifier of +5. You can affix talismans to <em>bracers of armor</em> as though they were light armor.</p>"
+                    "value": "<p>Decorated with clear gemstones, these thick metal bands spread an inflexible layer of force over your body. The force grants you a +2 item bonus to AC and saving throws, and a maximum Dexterity modifier of +5 as armor. You can affix talismans to the bands as though they were light armor.</p>\n<p><strong>Activate—Return Force</strong> <span class=\"action-glyph\">R</span> (force, manipulate)</p>\n<p><strong>Trigger</strong> A creature critically misses you with a melee Strike</p><hr /><p><strong>Effect</strong> You [[/act shove options=bands-of-force-greater]] the creature using the bands' Athletics modifier of +21.</p>"
                 },
                 "equipped": {
                     "carryType": "worn",
@@ -2312,13 +2322,13 @@
                 },
                 "price": {
                     "value": {
-                        "gp": 4000
+                        "gp": 4500
                     }
                 },
                 "publication": {
-                    "license": "OGL",
-                    "remaster": false,
-                    "title": "Pathfinder Core Rulebook"
+                    "license": "ORC",
+                    "remaster": true,
+                    "title": "Pathfinder GM Core"
                 },
                 "quantity": 1,
                 "rules": [
@@ -2328,26 +2338,52 @@
                             "ac",
                             "saving-throw"
                         ],
-                        "slug": "bracers-of-armor",
+                        "slug": "bands-of-force",
                         "type": "item",
                         "value": 2
                     },
                     {
                         "key": "DexterityModifierCap",
                         "value": 5
+                    },
+                    {
+                        "key": "FlatModifier",
+                        "predicate": [
+                            "bands-of-force-greater"
+                        ],
+                        "selector": [
+                            "athletics"
+                        ],
+                        "slug": "bands-of-force-greater",
+                        "value": 21
+                    },
+                    {
+                        "key": "AdjustModifier",
+                        "predicate": [
+                            "bands-of-force-greater",
+                            {
+                                "or": [
+                                    "bonus:type:proficiency",
+                                    "modifier:type:ability"
+                                ]
+                            }
+                        ],
+                        "selector": "athletics",
+                        "suppress": true
                     }
                 ],
                 "size": "lg",
-                "slug": "bracers-of-armor-ii",
+                "slug": "bands-of-force-greater",
                 "traits": {
                     "rarity": "common",
                     "value": [
+                        "force",
                         "invested",
                         "magical"
                     ]
                 },
                 "usage": {
-                    "value": "wornbracers"
+                    "value": "wornarmbands"
                 }
             },
             "type": "equipment"

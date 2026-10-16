@@ -108,7 +108,7 @@ async function maintainFocusInRender(sheet: Application, renderLogic: () => Prom
     if (!activeElement || !activeWasHere) return;
 
     // If the active element was a tagify that is part of this sheet, re-render
-    if (activeElement instanceof HTMLInputElement && activeElement.dataset.property) {
+    if (fu.isElementInstanceOf(activeElement, HTMLInputElement) && activeElement.dataset.property) {
         const sameInput = htmlQuery(element, `input[data-property="${activeElement.dataset.property}"]`);
         sameInput?.focus();
     } else if (activeElement.classList.contains("tagify__input")) {
@@ -177,6 +177,7 @@ function getBasePhysicalItemViewData(item: PhysicalItemPF2e): BasePhysicalItemVi
         rarity: item.rarity,
         traits: item.traitChatData(),
         isTemporary: item.isTemporary,
+        updatedAt: item._stats.modifiedTime ?? undefined,
     };
 }
 
@@ -362,6 +363,8 @@ interface BasePhysicalItemViewData {
     level: number | null;
     rarity: Rarity | null;
     isTemporary: boolean;
+    /** When the item was last modified, keeping its expanded summary fresh */
+    updatedAt?: number;
 }
 
 export {
@@ -378,6 +381,7 @@ export {
     getBasePhysicalItemViewData,
     getItemFromDragEvent,
     isControlDown,
+    isRelevantEvent,
     maintainFocusInRender,
     sendItemToChat,
 };

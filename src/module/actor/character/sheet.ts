@@ -120,6 +120,8 @@ class CharacterSheetPF2e<TActor extends CharacterPF2e> extends CreatureSheetPF2e
             if (tab) tab.initial = "biography";
         }
 
+        sheetData.effectiveMaxHP = Math.max(actor.hitPoints.max - actor.hitPoints.unrecoverable, 0);
+
         sheetData.numberToRank = R.mapToObj([0, 1, 2, 3, 4] as const, (n) => [n, _loc(`PF2E.ProficiencyLevel${n}`)]);
 
         sheetData.senses = condenseSenses(this.actor.perception.senses.contents);
@@ -201,12 +203,14 @@ class CharacterSheetPF2e<TActor extends CharacterPF2e> extends CreatureSheetPF2e
 
             const keyAttributeSelected =
                 !sheetData.class || build.attributes.keyOptions.includes(sheetData.data.details.keyability.value);
+            // Complete when selections cover every slot that offers options
+            const unfilledAncestryBoosts = Object.values(sheetData.ancestry?.system.boosts ?? {}).reduce(
+                (count, b) => count + (b.value.length > 0 ? 1 : 0) - (b.selected ? 1 : 0),
+                0,
+            );
             const ancestryBoostsSelected =
-                (sheetData.ancestry?.system.alternateAncestryBoosts?.length === 2 ||
-                    Object.values(sheetData.ancestry?.system.boosts ?? {}).every(
-                        (b) => b.value.length === 0 || !!b.selected,
-                    )) &&
-                sheetData.ancestry?.system.voluntary?.boost !== null;
+                (sheetData.ancestry?.system.alternateAncestryBoosts?.length === 2 || unfilledAncestryBoosts <= 0) &&
+                (!sheetData.ancestry?.system.voluntary.legacy || !!sheetData.ancestry.system.voluntary.boost);
             const backgroundBoostsSelected = Object.values(sheetData.background?.system.boosts ?? {}).every(
                 (b) => b.value.length === 0 || !!b.selected,
             );
@@ -225,13 +229,11 @@ class CharacterSheetPF2e<TActor extends CharacterPF2e> extends CreatureSheetPF2e
         const allClassDCs = Object.values(sheetData.data.proficiencies.classDCs);
         const classDCs = allClassDCs
             .filter((cdc) => cdc.rank > 0 || allClassDCs.length > 1)
-            .map(
-                (classDC): ClassDCSheetData => ({
-                    ...classDC,
-                    icon: this.getProficiencyIcon(classDC.rank),
-                    hover: CONFIG.PF2E.proficiencyLevels[classDC.rank],
-                }),
-            )
+            .map((classDC): ClassDCSheetData => ({
+                ...classDC,
+                icon: this.getProficiencyIcon(classDC.rank),
+                hover: CONFIG.PF2E.proficiencyLevels[classDC.rank],
+            }))
             .sort((a, b) => (a.primary ? -1 : b.primary ? 1 : a.slug.localeCompare(b.slug)));
         const primaryClassDC = sheetData.data.attributes.classDC?.slug ?? null;
 
@@ -645,25 +647,30 @@ class CharacterSheetPF2e<TActor extends CharacterPF2e> extends CreatureSheetPF2e
                 weapon?.update({ system: { selectedAmmoId: ammo?.id ?? null } });
             });
 
-            const ammoQuantity = strikeElem.querySelector<HTMLInputElement>("input[data-action=change-ammo-quantity]");
-            ammoQuantity?.addEventListener("blur", (event) => {
-                event.stopPropagation();
-                const weapon = this.getAttackActionFromDOM(ammoQuantity)?.item;
-                if (!weapon) return;
+            // Change Ammo quantity
+            const ammoQuantityInputs = strikeElem.querySelectorAll<HTMLInputElement>(
+                "input[data-action=change-ammo-quantity]",
+            );
+            for (const input of ammoQuantityInputs) {
+                input?.addEventListener("blur", (event) => {
+                    event.stopPropagation();
+                    const weapon = this.getAttackActionFromDOM(input)?.item;
+                    if (!weapon) return;
 
-                const itemId = htmlClosest(ammoQuantity, "[data-item-id]")?.dataset.itemId;
-                const item = weapon.subitems.get(itemId, { strict: true });
-                if (!item.isOfType("ammo", "weapon")) return;
+                    const itemId = htmlClosest(input, "[data-item-id]")?.dataset.itemId;
+                    const item = weapon.subitems.get(itemId, { strict: true });
+                    if (!item.isOfType("ammo", "weapon")) return;
 
-                const value = Math.max(0, Number(ammoQuantity.value));
-                if (value === 0 && !(item.isOfType("ammo") && item.isMagazine && !item.system.uses.autoDestroy)) {
-                    item.delete();
-                } else if (item.isOfType("ammo") && item.isMagazine) {
-                    item.update({ "system.uses.value": value });
-                } else {
-                    item.update({ "system.quantity": value });
-                }
-            });
+                    const value = Math.max(0, Number(input.value));
+                    if (value === 0 && !(item.isOfType("ammo") && item.isMagazine && !item.system.uses.autoDestroy)) {
+                        item.delete();
+                    } else if (item.isOfType("ammo") && item.isMagazine) {
+                        item.update({ "system.uses.value": value });
+                    } else {
+                        item.update({ "system.quantity": value });
+                    }
+                });
+            }
         }
 
         // Handle adding and inputting custom user submitted modifiers
@@ -827,10 +834,12 @@ class CharacterSheetPF2e<TActor extends CharacterPF2e> extends CreatureSheetPF2e
         };
 
         handlers["edit-attribute-boosts"] = () => {
+            // Reuse an existing attribute builder if one is open: constructing a second instance with the same
+            // element ID would detach the open builder's element without closing it, breaking its render state.
+            const existing = foundry.applications.instances.get("attribute-builder");
             const builder =
-                Object.values(this.actor.apps).find((a) => a instanceof AttributeBuilder) ??
-                new AttributeBuilder({ actor: this.actor });
-            return builder.render({ force: true });
+                existing instanceof AttributeBuilder ? existing : new AttributeBuilder({ actor: this.actor });
+            return builder.render({ force: true, actor: this.actor });
         };
 
         handlers["select-apex-attribute"] = (event) => {
@@ -860,7 +869,7 @@ class CharacterSheetPF2e<TActor extends CharacterPF2e> extends CreatureSheetPF2e
 
         // Toggle certain weapon traits: currently Double Barrel or Versatile
         handlers["toggle-weapon-trait"] = async (_, button) => {
-            if (!(button instanceof HTMLButtonElement)) return;
+            if (!fu.isElementInstanceOf(button, HTMLButtonElement)) return;
 
             const weapon = this.getAttackActionFromDOM(button)?.item;
             const trait = button.dataset.trait;
@@ -1641,6 +1650,8 @@ interface CharacterSheetData<TActor extends CharacterPF2e = CharacterPF2e> exten
     crafting: CraftingSheetData;
     data: CharacterSystemSheetData;
     deity: DeityPF2e<CharacterPF2e> | null;
+    /** Max HP minus unrecoverable HP */
+    effectiveMaxHP: number;
     hasStamina: boolean;
     /** This actor has actual containers for stowing, rather than just containers serving as a UI convenience */
     hasRealContainers: boolean;

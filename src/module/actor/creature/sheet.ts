@@ -1,6 +1,6 @@
 import type { ActorPF2e, CreaturePF2e } from "@actor";
 import { ActorSheetDataPF2e } from "@actor/sheet/data-types.ts";
-import { createSpellcastingDialog } from "@actor/sheet/spellcasting-dialog.ts";
+import { openSpellcastingEntryDialog } from "@item/spellcasting-entry/apps/spellcasting-entry-dialog/app.ts";
 import type { FormSelectOption } from "@client/applications/forms/fields.d.mts";
 import type { ApplicationV1HeaderButton } from "@client/appv1/api/application-v1.d.mts";
 import type { ActorSheetOptions } from "@client/appv1/sheets/actor-sheet.d.mts";
@@ -9,7 +9,6 @@ import { ItemSourcePF2e } from "@item/base/data/index.ts";
 import { ITEM_CARRY_TYPES } from "@item/base/data/values.ts";
 import { coerceToSpellGroupId, spellSlotGroupIdToNumber } from "@item/spellcasting-entry/helpers.ts";
 import { SpellcastingSheetData } from "@item/spellcasting-entry/index.ts";
-import { TradeDialog } from "@module/apps/trade-dialog/app.ts";
 import { DropCanvasItemData } from "@module/canvas/drop-canvas-data.ts";
 import { OneToTen, ZeroToFour, goesToEleven } from "@module/data.ts";
 import { eventToRollParams } from "@module/sheet/helpers.ts";
@@ -18,7 +17,7 @@ import * as R from "remeda";
 import { ActorSheetPF2e, SheetClickActionHandlers } from "../sheet/base.ts";
 import { CreatureConfig } from "./config.ts";
 import { Language, ResourceData } from "./index.ts";
-import { SpellPreparationSheet } from "./spell-preparation-sheet.ts";
+import { SpellPreparationApp } from "./apps/spell-preparation/app.ts";
 
 /**
  * Base class for NPC and character sheets
@@ -67,11 +66,15 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
     #openSpellPreparation(collectionId: string, event?: DragEvent | PointerEvent): void {
         const entry = this.actor.items.get(collectionId, { strict: true });
         if (entry?.isOfType("spellcastingEntry") && entry.isPrepared) {
+            const existing = fa.instances.get(`spell-preparation-${entry.uuid}`);
+            if (existing) {
+                existing.bringToFront();
+                return;
+            }
             const referenceEl = htmlClosest(event?.target, "[data-action=open-spell-preparation]");
             const offset = referenceEl ? ($(referenceEl).offset() ?? { left: 0, top: 0 }) : null;
-            const options = offset ? { top: offset.top - 60, left: offset.left + 200 } : {};
-            const sheet = new SpellPreparationSheet(entry, options);
-            sheet.render(true);
+            const position = offset ? { top: offset.top - 60, left: offset.left + 200 } : {};
+            new SpellPreparationApp({ entry, position }).render({ force: true });
         }
     }
 
@@ -260,13 +263,13 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
 
         // Add, edit, and remove spellcasting entries
         handlers["spellcasting-create"] = () => {
-            return createSpellcastingDialog(actor);
+            return openSpellcastingEntryDialog(actor);
         };
         handlers["spellcasting-edit"] = (event): Promise<unknown> | void => {
             const containerId = htmlClosest(event.target, "[data-item-id]")?.dataset.itemId;
             const entry = actor.items.get(containerId, { strict: true });
             if (entry.isOfType("spellcastingEntry")) {
-                return createSpellcastingDialog(entry);
+                return openSpellcastingEntryDialog(entry);
             }
         };
         handlers["spellcasting-remove"] = async (event): Promise<ItemPF2e<TActor> | void> => {
@@ -357,46 +360,7 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
             }
         }
 
-        return (await this.#attemptTrade(data, event)) ? [] : super._onDropItem(event, data);
-    }
-
-    /**
-     * Determine whether a dropped item can be used for trading and initiate a trade if so.
-     * @returns whether a trade initiation request was sent
-     */
-    async #attemptTrade(data: DropCanvasItemData, event: DragEvent): Promise<boolean> {
-        if (game.user.isGM) return false;
-        const traderActor = this.actor;
-        if (traderActor.isLootableBy(game.user)) return false;
-        const item = await ItemPF2e.fromDropData(data);
-        const selfActor = item?.actor;
-        if (!item?.isOfType("physical") || !selfActor?.isOfType("creature")) return false;
-        const traderUser = game.users
-            .filter((u) => u.active && !u.isSelf && traderActor.testUserPermission(u, "OWNER"))
-            .sort((a, b) => Number(a.isGM) - Number(b.isGM))[0];
-
-        // Check reach separately: if a trade would be possible except for it being out of reach, still proceed no
-        // further in item-drop workflow
-        const args = {
-            self: { actor: selfActor, item, gift: event.shiftKey },
-            trader: { user: traderUser, actor: traderActor },
-        };
-        if (!TradeDialog.canTrade(args)) return false;
-        const checkReach = game.pf2e.settings.automation.reachEnforcement.has("merchants");
-        if (checkReach) {
-            const traderTokens = traderActor.getActiveTokens(true, false);
-            const selfReach = selfActor.system.attributes.reach.manipulate;
-            const traderReach = traderActor.system.attributes.reach.manipulate;
-            const inReach = selfActor.getActiveTokens(true, false).some((selfToken) =>
-                traderTokens.some((traderToken) => {
-                    const distance = selfToken.distanceTo(traderToken);
-                    return selfReach >= distance && traderReach >= distance;
-                }),
-            );
-            if (!inReach) return true;
-        }
-        TradeDialog.requestTrade(args);
-        return true;
+        return super._onDropItem(event, data);
     }
 
     /** Adds support for moving spells between spell levels, spell collections, and spell preparation */
@@ -454,7 +418,9 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
                 // if the drop container target is a spellcastingEntry then check if the item is a spell and if so update its location.
                 // if the dragged item is a spell and is from the same actor
                 if (CONFIG.debug.hooks) {
-                    console.debug("PF2e System | ***** spell from same actor dropped on a spellcasting entry *****");
+                    console.debug(
+                        `${SYSTEM_NAME} System | ***** spell from same actor dropped on a spellcasting entry *****`,
+                    );
                 }
 
                 const dropId = htmlClosest(event.target, "li[data-container-id]")?.dataset.containerId;
@@ -522,7 +488,7 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
     /** Open actor configuration for this sheet's creature */
     #onConfigureActor(): void {
         if (!this.actorConfigClass) return;
-        new this.actorConfigClass(this.actor).render(true);
+        new this.actorConfigClass({ document: this.actor }).render(true);
     }
 
     #onClickBrowseSpells(anchor: HTMLElement): void {

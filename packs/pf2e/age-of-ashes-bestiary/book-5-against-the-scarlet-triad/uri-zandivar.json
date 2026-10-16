@@ -416,7 +416,7 @@
                 },
                 "containerId": null,
                 "description": {
-                    "value": "<p>You can manacle someone who is willing or otherwise at your mercy as an exploration activity taking 10-30 seconds depending on the creature's size and how many manacles you apply. A two-legged creature with its legs bound takes a –15-foot circumstance penalty to its Speeds, and a two-handed creature with its wrists bound has to succeed at a @Check[flat|dc:5] any time it uses a manipulate action or else that action fails. This DC may be higher depending on how tightly the manacles constrain the hands. A creature bound to a stationary object is immobilized. For creatures with more or fewer limbs, the GM determines what effect manacles have, if any. Freeing a creature from superior manacles requires six successful @Check[thievery|dc:42|traits:action:pick-a-lock] checks.</p>"
+                    "value": "<p>You can manacle someone who is willing or otherwise at your mercy as an exploration activity taking 10-30 seconds depending on the creature's size and how many manacles you apply. A two-legged creature with its legs bound takes a –15-foot circumstance penalty to its Speeds, and a two-handed creature with its wrists bound has to succeed at a @Check[flat|dc:5|showDC:all] any time it uses a manipulate action or else that action fails. This DC may be higher depending on how tightly the manacles constrain the hands. A creature bound to a stationary object is immobilized. For creatures with more or fewer limbs, the GM determines what effect manacles have, if any. Freeing a creature from superior manacles requires six successful @Check[thievery|dc:42|showDC:all|traits:action:pick-a-lock] checks.</p>\n<p>@UUID[Compendium.pf2e.equipment-effects.Item.Effect: Manacles]</p>"
                 },
                 "equipped": {
                     "carryType": "worn",
@@ -441,9 +441,9 @@
                     }
                 },
                 "publication": {
-                    "license": "OGL",
-                    "remaster": false,
-                    "title": ""
+                    "license": "ORC",
+                    "remaster": true,
+                    "title": "Pathfinder Player Core"
                 },
                 "quantity": 1,
                 "rules": [],
@@ -454,7 +454,7 @@
                     "value": []
                 },
                 "usage": {
-                    "value": "held-in-one-hand"
+                    "value": "held-in-two-hands"
                 }
             },
             "type": "equipment"
@@ -970,7 +970,7 @@
                 },
                 "category": "offensive",
                 "description": {
-                    "value": "<p><strong>Trigger</strong> A creature within Uri's reach fails an attack roll, saving throw, or skill check</p>\n<hr />\n<p><strong>Effect</strong> Uri makes an unarmed Strike against the triggering creature. If the attack hits, the target must succeed at a @Check[fortitude|dc:41] save or become @UUID[Compendium.pf2e.conditionitems.Item.Enfeebled]{Enfeebled 3} until the end of its next turn (@UUID[Compendium.pf2e.conditionitems.Item.Enfeebled]{Enfeebled 4} on a critical failure).</p>"
+                    "value": "<p><strong>Trigger</strong> A creature within Uri's reach fails an attack roll, saving throw, or skill check</p>\n<hr />\n<p><strong>Effect</strong> Uri makes an unarmed Strike against the triggering creature. If the attack hits, the target must succeed at a @Check[fortitude|dc:41|options:inflicts:enfeebled] save or become @UUID[Compendium.pf2e.conditionitems.Item.Enfeebled]{Enfeebled 3} until the end of its next turn (@UUID[Compendium.pf2e.conditionitems.Item.Enfeebled]{Enfeebled 4} on a critical failure).</p>"
                 },
                 "publication": {
                     "license": "OGL",
@@ -1063,14 +1063,25 @@
                 },
                 "category": "offensive",
                 "description": {
-                    "value": "<p><strong>Requirements</strong> Uri has @UUID[Compendium.pf2e.equipment-srd.Item.Manacles (Superior)]{Manacles} in his possession and is adjacent to a creature</p>\n<hr />\n<p><strong>Effect</strong> Uri sheathes a weapon he's carrying, then attempts to bind the creature's wrists or ankles with the @UUID[Compendium.pf2e.equipment-srd.Item.Manacles (Superior)]{Manacles}. If Uri succeeds at an attack roll with a [[/r 1d20+36 #Manacles]]{+36 modifier} against the target's AC, he applies the @UUID[Compendium.pf2e.equipment-srd.Item.Manacles (Superior)]{Manacles}.</p>"
+                    "value": "<p><strong>Requirements</strong> Uri has manacles in his possession and is adjacent to a creature</p>\n<hr />\n<p><strong>Effect</strong> Uri sheathes a weapon he's carrying, then attempts to bind the creature's wrists or ankles with the manacles. If Uri succeeds at an attack roll with a @Check[swift-capture|against:ac]{+36} modifier against the target's AC, he applies the manacles.</p>"
                 },
                 "publication": {
                     "license": "OGL",
                     "remaster": false,
                     "title": ""
                 },
-                "rules": [],
+                "rules": [
+                    {
+                        "key": "SpecialStatistic",
+                        "slug": "swift-capture",
+                        "type": "attack-roll"
+                    },
+                    {
+                        "key": "FlatModifier",
+                        "selector": "swift-capture-attack-roll",
+                        "value": 36
+                    }
+                ],
                 "slug": null,
                 "traits": {
                     "rarity": "common",

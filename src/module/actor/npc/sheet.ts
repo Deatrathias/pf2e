@@ -2,13 +2,13 @@ import type { NPCPF2e } from "@actor";
 import { CreatureSheetPF2e, type CreatureSheetData } from "@actor/creature/sheet.ts";
 import { applyActorGroupUpdate } from "@actor/helpers.ts";
 import { Modifier } from "@actor/modifiers.ts";
-import { NPCSkillsEditor } from "@actor/npc/skills-editor.ts";
+import { NPCSkillsEditor } from "@actor/npc/skills-editor/app.ts";
 import { SheetClickActionHandlers } from "@actor/sheet/base.ts";
 import { createAbilityViewData } from "@actor/sheet/helpers.ts";
 import { RecallKnowledgePopup } from "@actor/sheet/popups/recall-knowledge-popup.ts";
 import { ATTRIBUTE_ABBREVIATIONS, SAVE_TYPES } from "@actor/values.ts";
 import type { ActorSheetOptions } from "@client/appv1/sheets/actor-sheet.d.mts";
-import type { MeleePF2e, MeleeSource } from "@item/melee/index.ts";
+import type { MeleePF2e } from "@item/melee/index.ts";
 import { createNPCAttackTraitsAndTags, createTagifyTraits, eventToRollParams } from "@module/sheet/helpers.ts";
 import type { UserPF2e } from "@module/user/document.ts";
 import { DicePF2e } from "@scripts/dice.ts";
@@ -135,7 +135,9 @@ abstract class AbstractNPCSheet extends CreatureSheetPF2e<NPCPF2e> {
         };
 
         handlers["edit-skills"] = () => {
-            new NPCSkillsEditor(this.actor).render(true);
+            // Reuse an existing editor.
+            const existing = Object.values(this.actor.apps).find((a) => a instanceof NPCSkillsEditor);
+            return (existing ?? new NPCSkillsEditor({ actor: this.actor })).render({ force: true });
         };
 
         return handlers;
@@ -219,6 +221,7 @@ class NPCSheetPF2e extends AbstractNPCSheet {
         const heldShield = actor.heldShield;
         const actorShieldData = sheetData.data.attributes.shield;
         sheetData.hasShield = !!heldShield || actorShieldData.hp.max > 0;
+        sheetData.canRaiseShield = !!heldShield && !actorShieldData.destroyed;
 
         const { isElite, isWeak } = actor;
         sheetData.isElite = isElite;
@@ -399,8 +402,17 @@ class NPCSheetPF2e extends AbstractNPCSheet {
             }
         };
 
+        handlers["raise-a-shield"] = () => {
+            return game.pf2e.actions.raiseAShield({ actors: [this.actor] });
+        };
+
         handlers["open-recall-breakdown"] = () => {
-            return new RecallKnowledgePopup({ identificationData: this.actor.identificationDCs }).render(true);
+            // Reuse an existing popup if one is open: constructing a second instance with the same element ID
+            // would detach the open popup's element without closing it, breaking its render state.
+            const actor = this.actor;
+            const existing = foundry.applications.instances.get("recall-knowledge-breakdown");
+            const popup = existing instanceof RecallKnowledgePopup ? existing : new RecallKnowledgePopup({ actor });
+            return popup.render({ force: true, actor });
         };
 
         handlers["roll-attribute"] = (event, anchor) => {
@@ -432,21 +444,18 @@ class NPCSheetPF2e extends AbstractNPCSheet {
                         content: _loc("PF2E.Actor.NPC.GenerateAttack.Confirm.Content"),
                         no: { default: true },
                     });
-                    if (proceed) {
-                        await actor.deleteEmbeddedDocuments("Item", existing, { render: false });
-                    } else {
-                        return;
-                    }
+                    if (proceed) await actor.deleteEmbeddedDocuments("Item", existing, { render: false });
+                    else return;
                 }
 
                 // Create actions, and either relink to existing actions or create them
-                const attacks = item.toNPCAttacks().map((a) => a.toObject());
+                const attacks = item.toNPCAttacks();
                 const missingLinks = actor.itemTypes.melee.filter((m) => !m.linkedWeapon);
-                const getComparisonSubset = (item: MeleeSource | MeleePF2e) => ({
+                const getComparisonSubset = (item: MeleePF2e) => ({
                     name: item.name,
                     ...R.pick(item.system, ["action", "range"]),
                 });
-                const pairs = attacks.map((a): [MeleeSource, MeleePF2e | null] => [
+                const pairs = attacks.map((a): [MeleePF2e, MeleePF2e | null] => [
                     a,
                     missingLinks.find(
                         (l) =>
@@ -455,19 +464,27 @@ class NPCSheetPF2e extends AbstractNPCSheet {
                     ) ?? null,
                 ]);
                 const update = {
-                    itemCreates: pairs.filter((p) => !p[1]).map((p) => p[0]),
+                    itemCreates: pairs.filter((p) => !p[1]).map((p) => p[0].toObject()),
                     itemUpdates: pairs
-                        .filter((p): p is [MeleeSource, MeleePF2e] => !!p[1])
-                        .map(([newAction, oldAction]) => ({
-                            _id: oldAction.id,
-                            [`flags.${SYSTEM_ID}.linkedWeapon`]: newAction.flags[SYSTEM_ID].linkedWeapon,
-                        })),
+                        .filter((p): p is [MeleePF2e, MeleePF2e] => !!p[1])
+                        .map(([newAction, oldAction]) => {
+                            type UpdateData = { _id: string; flags?: Record<string, Record<string, unknown>> };
+                            const update: UpdateData = { _id: oldAction.id };
+                            const linkedWeapon = newAction.flags[SYSTEM_ID].linkedWeapon;
+                            if (linkedWeapon) {
+                                const { damageRolls, rules } = oldAction._source.system;
+                                const syncWeaponFeatures =
+                                    Object.keys(damageRolls).length > 1 || rules.length > 0 ? false : _del;
+                                update.flags = { [SYSTEM_ID]: { linkedWeapon, syncWeaponFeatures } };
+                            }
+                            return update;
+                        }),
                 };
                 await applyActorGroupUpdate(actor, update);
 
                 // Show correct notification based on update
                 const localizationKey = `PF2E.Actor.NPC.GenerateAttack.Notification.${update.itemCreates.length ? "New" : "Relinked"}`;
-                ui.notifications.info(_loc(localizationKey, { attack: attacks.at(0)?.name ?? "" }));
+                ui.notifications.info(localizationKey, { format: { attack: attacks.at(0)?.name ?? "" } });
             };
         }
 

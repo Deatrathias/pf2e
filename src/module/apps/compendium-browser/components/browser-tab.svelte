@@ -1,44 +1,65 @@
 <script lang="ts">
+    import { CompendiumBrowser } from "../browser.svelte.ts";
+    import type { RangeInputParser } from "../tabs/data.ts";
     import Filters from "./filters.svelte";
     import ResultItem from "./result-item.svelte";
-    import { ErrorPF2e } from "@util";
-    import { CompendiumBrowser, type CompendiumBrowserState } from "../browser.ts";
-    import type { ContentTabName } from "../data.ts";
 
-    type BrowserTabProps = { activeTabName: ContentTabName; state: CompendiumBrowserState };
-
-    const { activeTabName = $bindable(), ...props }: BrowserTabProps = $props();
-    if (!activeTabName) {
-        throw ErrorPF2e(`Invalid tab name: "${activeTabName}"!`);
+    interface Props {
+        foundryApp: CompendiumBrowser;
+        panelId: string;
+        /** Null when the tab strip is hidden */
+        labelledBy: string | null;
     }
-    const browser = game.pf2e.compendiumBrowser;
+    const { foundryApp: browser, panelId, labelledBy }: Props = $props();
+    // Parent gates rendering on `browser.activeTabName` being non-empty, so the cast is safe.
+    const activeTabName = $derived(browser.activeTabName as Exclude<typeof browser.activeTabName, "">);
     const tab = $derived(browser.tabs[activeTabName]);
 
     function resetFilters(): void {
         tab.resetFilters();
     }
 
-    function onscroll(): void {
-        if (!activeTabName) return;
-        const resultList = props.state.resultList;
-        if (resultList.scrollTop + resultList.clientHeight >= resultList.scrollHeight - 5) {
+    const parseRangeInput: RangeInputParser = (name, lower, upper) => tab.parseRangeFilterInput(name, lower, upper);
+
+    function onDragFade(faded: boolean): void {
+        if (faded) {
+            gsap.to(browser.element, { duration: 0.25, opacity: 0.125, pointerEvents: "none" });
+        } else {
+            window.setTimeout(() => {
+                gsap.to(browser.element, { duration: 0.25, opacity: 1, pointerEvents: "" });
+            }, CompendiumBrowser.DRAG_END_RESTORE_DELAY);
+        }
+    }
+
+    function onscroll(event: Event & { currentTarget: HTMLUListElement }): void {
+        if (!browser.activeTabName) return;
+        const resultList = event.currentTarget;
+        const threshold = CompendiumBrowser.SCROLL_LOAD_THRESHOLD;
+        if (resultList.scrollTop + resultList.clientHeight >= resultList.scrollHeight - threshold) {
             tab.resultLimit += CompendiumBrowser.RESULT_LIMIT;
         }
     }
 
     $effect(() => {
         if (tab.isGMOnly && !game.user.isGM) {
-            props.state.activeTabName = "";
+            browser.activeTabName = "";
             console.error("PF2e System | This browser tab is flagged as GM-only!");
         }
     });
 </script>
 
-<div class="browser-tab" data-tab-name={activeTabName} data-tooltip-class="pf2e">
-    <Filters bind:filter={tab.filterData} {resetFilters} />
-    <ul class="result-list" {onscroll} bind:this={props.state.resultList}>
+<div
+    class="browser-tab"
+    id={panelId}
+    role={labelledBy ? "tabpanel" : null}
+    aria-labelledby={labelledBy}
+    data-tab-name={activeTabName}
+    data-tooltip-class="pf2e"
+>
+    <Filters bind:filter={tab.filterData} {resetFilters} {parseRangeInput} />
+    <ul class="result-list" {onscroll} bind:this={browser.resultList}>
         {#each tab.results.slice(0, tab.resultLimit) as entry (entry.uuid)}
-            <ResultItem {activeTabName} {entry} />
+            <ResultItem {activeTabName} {entry} {onDragFade} />
         {/each}
     </ul>
 </div>

@@ -110,6 +110,17 @@
         "type": "Item"
     },
     {
+        "_id": "OdbLMxHHpzBzEbu7",
+        "color": null,
+        "description": "",
+        "flags": {},
+        "folder": null,
+        "name": "Naval Crew",
+        "sort": 0,
+        "sorting": "a",
+        "type": "Item"
+    },
+    {
         "_id": "BV5aEURntyhZdh32",
         "color": null,
         "description": "",
@@ -171,6 +182,17 @@
         "flags": {},
         "folder": "w5Pc3AuTwltjbYiz",
         "name": "Rune Dragon",
+        "sort": 0,
+        "sorting": "a",
+        "type": "Item"
+    },
+    {
+        "_id": "3ercTRbubKK7gAVL",
+        "color": null,
+        "description": "",
+        "flags": {},
+        "folder": null,
+        "name": "Shadowbound",
         "sort": 0,
         "sorting": "a",
         "type": "Item"
