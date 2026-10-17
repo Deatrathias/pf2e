@@ -668,6 +668,10 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
             "delete-item": async (event) => {
                 return this.deleteItem(await itemFromDOM(event), event);
             },
+            "consume-item": async (event) => {
+                const item = await itemFromDOM(event);
+                return item.isOfType("consumable") && item.consume();
+            },
             "item-to-chat": async (event): Promise<unknown | void> => {
                 const item = await itemFromDOM(event);
                 if (item.isOfType("spell")) {

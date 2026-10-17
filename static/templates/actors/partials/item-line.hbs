@@ -81,6 +81,9 @@
                         <i class="fa-solid fa-gem fa-fw"></i>
                     </a>
                 {{/if}}
+                {{#if item.isUsable}}
+                    <a class="active" data-action="consume-item" data-tooltip="PF2E.Item.Consumable.Uses.Use"><i class="fa-regular fa-hands fa-fw"></i></a>
+                {{/if}}
                 {{#if (and isSubitem (or item.isIdentified @root.user.isGM))}}
                     <a
                         class="item-carry-type active detach"

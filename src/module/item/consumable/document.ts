@@ -28,6 +28,11 @@ class ConsumablePF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extend
         return this.system.usage.type === "affixed" && "talisman" in this.system.traits.value;
     }
 
+    override get isUsable(): boolean {
+        const isUsableItemType = this.isIdentified ? true : ["other", "scroll", "spell-gem", "talisman", "toolkit", "wand"].includes(this.category);
+        return this.isEquipped && isUsableItemType && !!this.parent;
+    }
+
     get otherTags(): Set<OtherConsumableTag> {
         return new Set(this.system.traits.otherTags);
     }
@@ -77,18 +82,13 @@ class ConsumablePF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extend
     override async getChatData(
         this: ConsumablePF2e<ActorPF2e>,
         htmlOptions: EnrichmentOptionsPF2e = {},
-        rollOptions: Record<string, unknown> = {},
     ): Promise<RawItemChatData> {
         const traits = this.traitChatData(CONFIG.PF2E.consumableTraits);
-        const [category, isUsableItemType] = this.isIdentified
-            ? [_loc(CONFIG.PF2E.consumableCategories[this.category]), true]
-            : [
-                  this.generateUnidentifiedName({ typeOnly: true }),
-                  !["other", "scroll", "spell-gem", "talisman", "toolkit", "wand"].includes(this.category),
-              ];
+        const category = this.isIdentified
+            ? _loc(CONFIG.PF2E.consumableCategories[this.category])
+            : this.generateUnidentifiedName({ typeOnly: true });
 
         const usesLabel = _loc("PF2E.Item.Consumable.Uses.Label");
-        const fromFormula = !!rollOptions.fromFormula;
 
         return this.processChatData(htmlOptions, {
             ...(await super.getChatData()),
@@ -96,7 +96,6 @@ class ConsumablePF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extend
             properties:
                 this.isIdentified && this.uses.max > 1 ? [`${this.uses.value}/${this.uses.max} ${usesLabel}`] : [],
             category,
-            isUsable: isUsableItemType && !fromFormula && this.parent && this.parent.items.get(this.id),
         });
     }
 
@@ -149,6 +148,7 @@ class ConsumablePF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extend
             }
         } else {
             // Announce consumption of other types
+            await this.toMessage(null, { create: true });
             const exhausted = uses.max >= thisMany && uses.value === thisMany;
             const key = exhausted && uses.max > 1 ? "UseExhausted" : uses.max > thisMany ? "UseMulti" : "UseSingle";
             const content = _loc(`PF2E.ConsumableMessage.${key}`, {

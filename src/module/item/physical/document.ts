@@ -183,6 +183,10 @@ abstract class PhysicalItemPF2e<TParent extends ActorPF2e | null = ActorPF2e | n
         return hitPoints.max > 0 && hitPoints.value === 0;
     }
 
+    get isUsable(): boolean {
+        return false;
+    }
+
     get material(): ItemMaterialData {
         return fu.deepClone(this.system.material);
     }
