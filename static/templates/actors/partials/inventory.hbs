@@ -19,7 +19,7 @@
                     {{localize "PF2E.Item.Physical.Bulk.Label"}}
                 {{~/if~}}
             </span>
-            {{#if @root.editable}}
+            {{#if (and @root.editable (not (includes section.types "hands")))}}
                 <div class="item-controls">
                     <a
                         data-action="create-item"
@@ -32,6 +32,8 @@
                         data-filter="{{section.types}}"
                     ><i class="fa-solid fa-fw fa-search"></i></a>
                 </div>
+            {{else if (and @root.editable (includes section.types "hands"))}}
+                <div class="item-controls"></div>
             {{else if (ne @root.actor.type "loot")}}
                 <div class="item-controls readonly"></div>
             {{/if}}

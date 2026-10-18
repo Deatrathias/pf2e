@@ -2,7 +2,7 @@ import { ActorPF2e, type PartyPF2e } from "@actor";
 import type { HitPointsSummary } from "@actor/base.ts";
 import { CORE_RESOURCES } from "@actor/character/values.ts";
 import type { CreatureSource } from "@actor/data/index.ts";
-import { getTempHPSourceId } from "@actor/helpers.ts";
+import { applyActorGroupUpdate, createActorGroupUpdate, getTempHPSourceId } from "@actor/helpers.ts";
 import { Modifier, MODIFIER_TYPES, RawModifier } from "@actor/modifiers.ts";
 import { ActorSpellcasting } from "@actor/spellcasting.ts";
 import type { MovementType, SaveType, SkillSlug } from "@actor/types.ts";
@@ -618,9 +618,38 @@ abstract class CreaturePF2e<
                 await this.deleteEmbeddedDocuments("Item", effectIds);
             }
 
-            updates.push({ _id: item.id, system: { containerId: null, equipped: equipped } });
+            // Only hold one quantity of item
+            if (equipped.carryType === "held" && item.quantity > 1) {
+                const heldItem = item.toObject();
+                heldItem.system.quantity = 1;
+                heldItem.system.equipped = equipped;
+                heldItem.system.containerId = null;
+                const actorUpdates = createActorGroupUpdate({
+                    itemCreates: [heldItem],
+                    itemUpdates: [{_id: item.id, "system.quantity": item.quantity - 1}]
+                });
 
-            await this.updateEmbeddedDocuments("Item", updates);
+                await applyActorGroupUpdate(this, actorUpdates);
+            } else {
+                if (item.carryType === "held" && equipped.carryType !== "held") {
+                    const subitemData = item.toObject();
+                    subitemData.system.equipped = equipped;
+                    const stack = this.inventory.findStackableItem(subitemData);
+                    if (stack) {
+                        const actorUpdates = createActorGroupUpdate({
+                            itemUpdates: [{_id: stack.id, "system.quantity": stack.quantity + item.quantity}],
+                            itemDeletes: [item.id],
+                        });
+
+                        await applyActorGroupUpdate(this, actorUpdates);
+
+                        return;
+                    }
+                }
+                updates.push({ _id: item.id, system: { containerId: null, equipped: equipped } });
+
+                await this.updateEmbeddedDocuments("Item", updates);
+            }
         }
     }
 

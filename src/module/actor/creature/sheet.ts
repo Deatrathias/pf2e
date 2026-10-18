@@ -162,7 +162,7 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
 
         handlers["recovery-check"] = (event) => actor.rollRecovery(event);
 
-        handlers["open-carry-type-menu"] = (_, anchor) => this.#openCarryTypeMenu(anchor);
+        handlers["open-carry-type-menu"] = (event, anchor) => this.#openCarryTypeMenu(event, anchor);
 
         // SPELLCASTING
 
@@ -288,13 +288,30 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
     }
 
     // Change carry type
-    async #openCarryTypeMenu(anchor: HTMLElement): Promise<void> {
+    async #openCarryTypeMenu(event: PointerEvent, anchor: HTMLElement): Promise<void> {
         // Close the menu and return early if any carry-type menu is already open
         const menuOpen = !!document.body.querySelector("aside.locked-tooltip.carry-type-menu");
         if (menuOpen) game.tooltip.dismissLockedTooltips();
 
         const itemId = htmlClosest(anchor, "[data-item-id]")?.dataset.itemId;
         const item = this.actor.inventory.get(itemId, { strict: true });
+        // Equip or unequip when shift key is held
+        if (event.shiftKey) {
+            if (item.isEquipped) {
+                await this.actor.changeCarryType(item, {
+                    carryType: "worn"
+                });
+            } else {
+                const newCarryType = item.system.usage.type === "carried" ? "worn" : item.system.usage.type;
+                await this.actor.changeCarryType(item, {
+                    carryType: newCarryType,
+                    handsHeld: item.system.usage.hands,
+                    inSlot: true,
+                });
+            }
+
+            return;
+        }
         const hasStowingContainers = this.actor.itemTypes.backpack.some((i) => i.system.stowing && !i.isInContainer);
         const templatePath = `systems/${SYSTEM_ID}/templates/actors/partials/carry-type.hbs`;
         const templateArgs = { item, hasStowingContainers };

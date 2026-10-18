@@ -210,10 +210,22 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
             { label: _loc("PF2E.Item.Container.Plural"), types: ["backpack"], items: [] },
         ];
 
+        const handSection = {
+            label: _loc("PF2E.Item.Weapon.HandsLabel"),
+            types: ["hands"],
+            items: [],
+        };
+
         for (const item of actor.inventory.contents.sort((a, b) => (a.sort || 0) - (b.sort || 0))) {
             if (item.isInContainer) continue;
-            const section = sections.find((s) => s.types.includes(item.type));
+            const section = item.isHeld ? handSection : sections.find((s) => s.types.includes(item.type));
             section?.items.push(this.prepareInventoryItem(item));
+        }
+
+        if (handSection.items.length > 0 || actor.isOfType("character")) {
+            if (actor.isOfType("character"))
+                handSection.label += ` (${actor.system.hands.used.value}/${actor.system.hands.max.value})`;
+            sections.unshift(handSection);
         }
 
         return {

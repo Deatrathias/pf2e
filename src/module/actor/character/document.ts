@@ -41,7 +41,7 @@ import type {
     HeritagePF2e,
     ItemPF2e,
 } from "@item";
-import { WeaponPF2e } from "@item";
+import { ShieldPF2e, WeaponPF2e } from "@item";
 import type { AbilityTrait } from "@item/ability/types.ts";
 import { ARMOR_CATEGORIES } from "@item/armor/values.ts";
 import { ActionCost } from "@item/base/data/index.ts";
@@ -410,6 +410,7 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
         this.system.hands = {
             max: { value: 2, active: 2 },
             free: { value: 2, really: 2 },
+            used: { value: 0 }
         };
 
         // PC level is never a derived number, so it can be set early
@@ -479,10 +480,11 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
             const handsHeld = item.handsHeld;
             if (!handsHeld) continue;
             reallyHeldCount += handsHeld;
-            if (item.type !== "shield" && !item.system.traits.value.includes("free-hand")) heldCount += handsHeld;
+            if ((item.type !== "shield" || !(item as ShieldPF2e<this>).isBuckler) && !item.system.traits.value.includes("free-hand")) heldCount += handsHeld;
         }
         this.system.hands.free.value = Math.clamp(maxHands - heldCount, 0, maxHands);
         this.system.hands.free.really = Math.clamp(maxHands - reallyHeldCount, 0, maxHands);
+        this.system.hands.used.value = heldCount;
     }
 
     override prepareDerivedData(): void {

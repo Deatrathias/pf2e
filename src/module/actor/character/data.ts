@@ -446,6 +446,7 @@ interface CharacterPerceptionData extends CreaturePerceptionData {
 interface CharacterHandsData {
     max: { value: number; active: number };
     free: { value: number; really: number };
+    used: { value: number };
 }
 
 interface CharacterDetails extends Omit<CharacterDetailsSource, "alliance">, CreatureDetails {

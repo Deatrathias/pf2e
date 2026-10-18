@@ -82,7 +82,11 @@
                     </a>
                 {{/if}}
                 {{#if item.isUsable}}
-                    <a class="active" data-action="consume-item" data-tooltip="PF2E.Item.Consumable.Uses.Use"><i class="fa-regular fa-hands fa-fw"></i></a>
+                    {{#if (gt item.uses.value 0)}}
+                        <a class="active" data-action="consume-item" data-tooltip="PF2E.Item.Consumable.Uses.Use"><i class="fa-solid fa-hands fa-fw"></i></a>
+                    {{else}}
+                        <span data-tooltip="PF2E.Item.Consumable.Uses.None"><i class="fa-solid fa-ban fa-fw"></i></span>
+                    {{/if}}
                 {{/if}}
                 {{#if (and isSubitem (or item.isIdentified @root.user.isGM))}}
                     <a
