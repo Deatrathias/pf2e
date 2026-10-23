@@ -96,6 +96,7 @@ interface ActorAttributes extends ActorAttributesSource {
         itemId: string | null;
     };
     flanking: FlankingData;
+    multipleAttackPenalty?: { value: ZeroToTwo };
 }
 
 interface FlankingData {
@@ -280,7 +281,7 @@ interface StrikeData extends StatisticModifier, BasicAttackAction {
     /** Alternative usages of a strike weapon: thrown, combination-melee, etc. */
     altUsages?: AttackAction[];
     /** A list of attack variants which apply the Multiple Attack Penalty. */
-    variants: { penalty: number; label: string; roll: RollFunction<AttackRollParams> }[];
+    variants: { penalty: number; label: string; roll: RollFunction<AttackRollParams>, current: boolean }[];
 }
 
 interface AreaAttack extends BasicAttackAction {
@@ -290,7 +291,7 @@ interface AreaAttack extends BasicAttackAction {
     attackRollType: string;
     statistic: Statistic;
     /** A list of buttons to show. In practice there is only one */
-    variants: { label: string; roll: () => void }[];
+    variants: { label: string; roll: () => void; current: boolean }[];
 }
 
 type AttackAction = StrikeData | AreaAttack;

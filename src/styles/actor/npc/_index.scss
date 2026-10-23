@@ -338,6 +338,24 @@
         &.languages {
             flex: 1;
         }
+
+        &.attacks {
+            .section-header {
+                h4 {
+                    flex-grow: 0;
+                }
+
+                .map-part {
+                    display: flex;
+                    flex: auto;
+                    margin-left: 5px;
+                    .map {
+                        display: flex;
+                        cursor: pointer;
+                    }
+                }
+            }
+        }
     }
 
     select {

@@ -41,10 +41,6 @@ async function createUseActionMessage(
     })();
     if (!craftedItem && isCraftingAction) return null;
 
-    // If there is no self effect nor crafted item, show a regular message
-    if (!item.system.selfEffect && !craftedItem) {
-        return (await item.toMessage(null, { mode: messageMode })) ?? null;
-    }
 
     const speaker = ChatMessagePF2e.getSpeaker({ actor, token });
     const flavor = await fa.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/chat/action/flavor.hbs`, {
@@ -69,6 +65,7 @@ async function createUseActionMessage(
     if (item.system.selfEffect) {
         flags[SYSTEM_ID].context = { type: "self-effect", item: item.id };
     } else {
+        flags[SYSTEM_ID].context = { type: "ability-used", options: item.getRollOptions() };
         flags[SYSTEM_ID].origin = item.getOriginData();
     }
 

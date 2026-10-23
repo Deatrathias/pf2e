@@ -30,7 +30,7 @@ import { ActiveEffectPF2e } from "@module/active-effect.ts";
 import type { TokenPF2e } from "@module/canvas/index.ts";
 import { ChatMessagePF2e } from "@module/chat-message/document.ts";
 import type { AppliedDamageFlag } from "@module/chat-message/index.ts";
-import type { Size } from "@module/data.ts";
+import type { Size, ZeroToTwo } from "@module/data.ts";
 import { preImportJSON } from "@module/doc-helpers.ts";
 import { CombatantPF2e, EncounterPF2e } from "@module/encounter/index.ts";
 import { RollNotePF2e } from "@module/notes.ts";
@@ -282,6 +282,10 @@ class ActorPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e | n
 
     get combatant(): CombatantPF2e<EncounterPF2e> | null {
         return game.combat?.combatants.find((c) => c.actor?.uuid === this.uuid) ?? null;
+    }
+
+    get multipleAttackPenalty(): ZeroToTwo {
+        return this.system.attributes.multipleAttackPenalty?.value ?? 0;
     }
 
     /** Add effect icons from effect items and rule elements */

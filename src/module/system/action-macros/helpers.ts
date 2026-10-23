@@ -166,6 +166,7 @@ class ActionMacroHelpers {
                 combinedOptions.push(...(actionTraits.map((t) => `item:trait:` + t) ?? []));
                 const notes = options.extraNotes?.(statistic.slug) ?? [];
                 const label = (await options.content?.(header)) ?? header;
+                const item = options.item ? options.item(actor) : weapon;
 
                 if (statistic instanceof Statistic) {
                     const dc = this.#resolveCheckDC({ unresolvedDC: options.difficultyClass });
@@ -180,6 +181,7 @@ class ActionMacroHelpers {
                         modifiers,
                         target: targetData.actor,
                         traits: actionTraits,
+                        item,
                         createMessage: options.createMessage,
                         callback: (roll, outcome, message) => {
                             options.callback?.({ actor, message, outcome, roll });
@@ -333,7 +335,7 @@ class ActionMacroHelpers {
 
     static #getApplicableEquippedWeapons(actor: ActorPF2e, trait: WeaponTrait): WeaponPF2e<ActorPF2e>[] {
         if (actor.isOfType("character")) {
-            return actor.system.actions.flatMap((s) => (s.ready && s.item.traits.has(trait) ? s.item : []));
+            return actor.system.actions.flatMap((s) => (s.ready && (s.item.traits.has(trait) || s.slug === "basic-unarmed") ? s.item : []));
         } else {
             return actor.itemTypes.weapon.filter((w) => w.isEquipped && w.traits.has(trait));
         }

@@ -45,6 +45,7 @@ type ChatContextFlag =
     | CheckContextChatFlag
     | DamageDamageContextFlag
     | SpellCastContextFlag
+    | AbilityUsedContextFlag
     | SelfEffectContextFlag
     | DamageTakenContextFlag
     | AreaAttackContextFlag;
@@ -131,6 +132,13 @@ interface AreaAttackContextFlag {
     domains: string[];
     options: string[];
     dc?: Omit<CheckDC, "statistic">;
+    outcome?: never;
+}
+
+interface AbilityUsedContextFlag {
+    type: "ability-used";
+    domains?: never;
+    options: string[];
     outcome?: never;
 }
 

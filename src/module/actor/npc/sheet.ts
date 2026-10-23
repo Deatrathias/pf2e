@@ -344,6 +344,7 @@ class NPCSheetPF2e extends AbstractNPCSheet {
                     glyph: attack.glyph,
                     variants: attack.variants.map((v, idx) => ({
                         label: v.label,
+                        current: v.current,
                         breakdown: idx === 0 ? breakdown : null,
                     })),
                     traitsAndTags: createNPCAttackTraitsAndTags(item),

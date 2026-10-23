@@ -155,6 +155,7 @@
 {{#*inline "attackDamage"}}
     <div class="button-group tags" data-tooltip-direction="UP">
         {{#each variants as |variant index|}}
+        {{#if variant.current}}
             <button type="button" class="tag tag_secondary variant-strike" data-action="strike-attack" data-variant-index="{{index}}"
                 {{#if ../altUsageIndex includeZero=true}}data-alt-usage="{{../altUsageIndex}}"{{/if}}
                 {{#if (eq ../quantity 0)}}
@@ -162,16 +163,15 @@
                 {{/if}}
             >
                 {{#if (eq ../type "strike")}}
-                    {{#if (eq index 0)}}
-                        <span class="name">{{localize "PF2E.WeaponStrikeLabel"}}</span>
-                        <span class="action-glyph">{{../glyph}}</span>
-                    {{/if}}
+                    <span class="name">{{localize "PF2E.WeaponStrikeLabel"}}</span>
+                    <span class="action-glyph">{{../glyph}}</span>
                     {{variant.label}}
                 {{else}}
                     {{variant.label}}
                     <span class="action-glyph">{{../glyph}}</span>
                 {{/if}}
             </button>
+        {{/if}}
         {{/each}}
         {{#if item.dealsDamage}}
             <button type="button" class="tag damage" data-action="strike-damage"

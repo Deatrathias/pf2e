@@ -35,7 +35,9 @@
     <div class="button-group">
         <div class="subsection attack">
             {{#each action.variants as |variant index|}}
-                <button type="button" class="attack-button" {{#if variant.breakdown}}data-tooltip="{{variant.breakdown}}"{{/if}} data-action="strike-attack" data-variant-index="{{index}}">{{variant.label}}</button>
+            {{#if variant.current}}
+                <button type="button" class="attack-button" {{#if variant.breakdown}}data-tooltip="{{variant.breakdown}}"{{/if}} data-action="strike-attack" data-variant-index="{{index}}">{{localize "PF2E.WeaponStrikeLabel"}} {{variant.label}}</button>
+            {{/if}}
             {{/each}}
         </div>
         {{#if action.damageFormula}}

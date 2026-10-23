@@ -326,6 +326,16 @@
         flex: 1;
     }
 
+    header .map {
+        display: inline-block;
+        margin-left: 5px;
+        cursor: pointer;
+
+        i {
+            display: inline;
+        }
+    }
+
     button.activate {
         background: none;
         border: 1px solid var(--color-border-dark);

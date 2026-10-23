@@ -553,7 +553,7 @@ function strikeFromMeleeItem(item: MeleePF2e<ActorPF2e>): NPCStrike {
         });
     };
 
-    const labels = [{ penalty: 0, label: `${_loc("PF2E.WeaponStrikeLabel")} ${signedInteger(strike.totalModifier)}` }];
+    const labels = [{ penalty: 0, label: signedInteger(strike.totalModifier) }];
     if (item.system.subjectToMAP) {
         labels.push(
             ...(["map1", "map2"] as const).map((prop) => {
@@ -571,6 +571,7 @@ function strikeFromMeleeItem(item: MeleePF2e<ActorPF2e>): NPCStrike {
     const penalties = item.system.subjectToMAP ? [null, ...(["map1", "map2"] as const).map(createMAPenalty)] : [null];
     strike.variants = penalties.map((map, mapIncreases) => ({
         ...labels[mapIncreases],
+        current: mapIncreases === actor.multipleAttackPenalty,
         roll: async (params: AttackRollParams = {}): Promise<Rolled<CheckRoll> | null> => {
             params.options ??= [];
             // Always add all weapon traits as options
@@ -738,6 +739,7 @@ function areaFireFromMeleeItem(item: MeleePF2e<ActorPF2e>): NPCAreaAttack {
                     label: _loc(NPC_ATTACK_ACTIONS[action]),
                     dc: statistic.dc.value,
                 }),
+                current: true,
                 roll: () => {
                     if (!item.system.area) throw ErrorPF2e("Unexpected missing area data");
                     createAreaAttackMessage({

@@ -185,6 +185,9 @@ class CombatantPF2e<
                 for (const condition of activeConditions) {
                     await condition.onEndTurn({ token });
                 }
+                if (actor.system.attributes.multipleAttackPenalty) {
+                    await actor.update({ "system.attributes.multipleAttackPenalty.value": 0 });
+                }
             }
 
             // Effect changes on turn end

@@ -11,7 +11,7 @@ import type { EffectTrait } from "@item/abstract-effect/types.ts";
 import type { RangeData } from "@item/types.ts";
 import type { WeaponDamage } from "@item/weapon/data.ts";
 import type { WeaponTrait } from "@item/weapon/types.ts";
-import type { OneToTwo } from "@module/data.ts";
+import type { OneToTwo, ZeroToTwo } from "@module/data.ts";
 import {
     extractDamageDice,
     extractModifierAdjustments,
@@ -168,6 +168,7 @@ class ElementalBlast {
         item.flags[SYSTEM_ID].attackItemBonus =
             statistic.check.modifiers.find((m) => m.enabled && ["item", "potency"].includes(m.type))?.value ?? 0;
 
+        const currentMAP = this.actor.attributes.multipleAttackPenalty?.value ?? 0;
         // In case of infusions, get separate MAPs for melee and ranged attacks
         const maps = (() => {
             const domains = [...statistic.check.domains, "elemental-blast-attack-roll"];
@@ -227,6 +228,7 @@ class ElementalBlast {
                 item,
                 ready: true,
                 maps,
+                currentMAP,
                 actionCost,
                 damageTypes,
                 range,
@@ -267,6 +269,7 @@ class ElementalBlast {
             dieFaces: 6,
             label,
             maps: { melee: { map0: "", map1: "", map2: "" }, ranged: { map0: "", map1: "", map2: "" } },
+            currentMAP: 0,
             actionCost: this.actionCost,
             damageTypes: [{ value: "fire", label: "", icon: "", selected: true }],
             range: { increment: null, max: 30, label: "" },
@@ -623,6 +626,7 @@ interface ElementalBlastConfig extends Omit<fields.ModelPropsFromSchema<BlastCon
         melee: { map0: string; map1: string; map2: string };
         ranged: { map0: string; map1: string; map2: string };
     };
+    currentMAP: ZeroToTwo;
 }
 
 interface BlastConfigDamageType {

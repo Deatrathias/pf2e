@@ -13,6 +13,15 @@
 
                     <header>
                         {{localize "PF2E.Actor.Attacks"}}
+                        <div class="map" data-tooltip="{{localize "PF2E.MultipleAttackPenalty"}}" data-action="adjust-map-value">
+                            {{#times 2 as |idx|}}
+                                {{#if (gt @root.multipleAttackPenalty idx)}}
+                                    <i class="fa-solid fa-circle-caret-down"></i>
+                                {{else}}
+                                    <i class="fa-regular fa-circle"></i>
+                                {{/if}}
+                            {{/times}}
+                        </div>
                         {{#if inventory.hasStowedWeapons}}
                             <button
                                 type="button"

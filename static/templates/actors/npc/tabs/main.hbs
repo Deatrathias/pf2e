@@ -155,6 +155,17 @@
     <div class="attacks section-container">
         <div class="section-header">
             <h4>{{localize "PF2E.NPC.Attacks"}}</h4>
+            <div class="map-part">
+                <div class="map" data-tooltip="{{localize "PF2E.MultipleAttackPenalty"}}" data-action="adjust-map-value">
+                    {{#times 2 as |idx|}}
+                        {{#if (gt @root.multipleAttackPenalty idx)}}
+                            <i class="fa-solid fa-circle-caret-down"></i>
+                        {{else}}
+                            <i class="fa-regular fa-circle"></i>
+                        {{/if}}
+                    {{/times}}
+                </div>
+            </div>
             {{#if options.editable}}
                 <div class="attacks-controls controls">
                     <a data-action="create-item" data-type="melee"><i class="fa-solid fa-plus"></i> {{localize "PF2E.TraitAttack"}}</a>

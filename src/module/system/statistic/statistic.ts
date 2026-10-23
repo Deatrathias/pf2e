@@ -559,12 +559,16 @@ class StatisticCheck<TParent extends Statistic = Statistic> {
             });
             if (incapacitation) dosAdjustments.push(incapacitation);
         }
-        const mapIncreases = Math.clamp((args.attackNumber ?? 1) - 1, 0, 2) as ZeroToTwo;
+        const mapIncreases = 
+            (args.attackNumber !== undefined ?
+            Math.clamp((args.attackNumber ?? 1) - 1, 0, 2) : 
+            ((options.has("attack") || options.has("item:trait:attack")) ? selfActor.multipleAttackPenalty : 0)) as ZeroToTwo;
 
         // Include multiple attack penalty to extra modifiers if given
         if (mapIncreases !== 0) {
             if (!item) {
                 console.warn("Missing item argument while calculating MAP during check");
+                extraModifiers.push(new Modifier("PF2E.MultipleAttackPenalty", [0, -4, -8][mapIncreases], "untyped"))
             } else {
                 const maps = calculateMAPs(item, { domains, options });
                 const penalty = maps[`map${mapIncreases}`];

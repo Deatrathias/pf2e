@@ -943,7 +943,6 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
     async rollAttack(
         this: SpellPF2e<ActorPF2e>,
         event: PointerEvent,
-        attackNumber = 1,
         context: StatisticRollParameters = {},
     ): Promise<Rolled<CheckRoll> | null> {
         const { statistic, tradition } = this.spellcasting ?? {};
@@ -959,7 +958,7 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
             action: "cast-a-spell",
             item: this,
             traits: R.unique([...this.system.traits.value, tradition]).filter(R.isNonNullish),
-            attackNumber,
+            attackNumber: this.actor.multipleAttackPenalty + 1,
             dc: { slug: this.system.defense?.passive?.statistic ?? "ac" },
         });
     }

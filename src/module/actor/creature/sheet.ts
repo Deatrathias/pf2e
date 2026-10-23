@@ -56,6 +56,7 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
                 remainingDying: Math.max(actor.attributes.dying.max - actor.attributes.dying.value),
                 remainingWounded: Math.max(actor.attributes.wounded.max - actor.attributes.wounded.value),
             },
+            multipleAttackPenalty: actor.multipleAttackPenalty,
             specialResources: Object.values(this.actor.synthetics.resources).map((r) =>
                 R.pick(r, ["slug", "label", "value", "max"]),
             ),
@@ -143,6 +144,12 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
                 }
             });
         }
+
+        for (const pips of htmlQueryAll(html, "[data-action=adjust-map-value]")) {
+            pips.addEventListener("click", (event) => this.actor.updateMAP(event.shiftKey ? 2 : 1));
+            pips.addEventListener("contextmenu", (event) => this.actor.updateMAP(event.shiftKey ? -2 : -1));
+        }
+
     }
 
     protected override activateClickListener(html: HTMLElement): SheetClickActionHandlers {
@@ -538,6 +545,7 @@ interface CreatureSheetData<TActor extends CreaturePF2e> extends ActorSheetDataP
         remainingDying: number;
         remainingWounded: number;
     };
+    multipleAttackPenalty: number;
     specialResources: ResourceData[];
 }
 

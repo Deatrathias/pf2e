@@ -802,6 +802,17 @@ abstract class CreaturePF2e<
     }
 
     /**
+     * Update Multiple attack penalty
+     */
+    async updateMAP(value: number, { render }: { render?: boolean } = {}): Promise<void> {
+        if (!this.system.attributes.multipleAttackPenalty)
+            return;
+
+        await this.update({ "system.attributes.multipleAttackPenalty.value": 
+            Math.clamp(this.system.attributes.multipleAttackPenalty.value + value, 0, 2) }, { render });
+    }
+
+    /**
      * Prepare this creature's movement data
      * @param modifiers Modifiers in addition to those extracted
      */

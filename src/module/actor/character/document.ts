@@ -1216,6 +1216,7 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
                         label: _loc(actionLabel),
                         dc: statistic.dc.value,
                     }),
+                    current: true,
                     roll: () => {
                         createAreaAttackMessage({
                             actor,
@@ -1475,6 +1476,7 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
                 new CheckModifier("strike-map2", statistic, otherModifiers),
         ];
 
+        const multipleAttackPenalty = this.multipleAttackPenalty;
         action.variants = ([0, 1, 2] as const).map((mapIncreases) => ({
             get penalty(): number {
                 const penalty = createMAPenalty(initialMAPs, mapIncreases);
@@ -1489,6 +1491,9 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
                           penalty,
                       })
                     : signedInteger(action.totalModifier);
+            },
+            get current(): boolean {
+                return mapIncreases === multipleAttackPenalty
             },
             roll: async (params: AttackRollParams = {}): Promise<Rolled<CheckRoll> | null> => {
                 params.options ??= [];

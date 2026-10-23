@@ -107,12 +107,6 @@ class ChatCards {
                 case "spell-attack":
                     await spell?.rollAttack(event);
                     return;
-                case "spell-attack-2":
-                    await spell?.rollAttack(event, 2);
-                    return;
-                case "spell-attack-3":
-                    await spell?.rollAttack(event, 3);
-                    return;
                 case "spell-damage":
                     spell?.rollDamage(event);
                     return;
