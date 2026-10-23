@@ -223,8 +223,9 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
         }
 
         if (handSection.items.length > 0 || actor.isOfType("character")) {
-            if (actor.isOfType("character"))
+            if (actor.isOfType("character")) {
                 handSection.label += ` (${actor.system.hands.used.value}/${actor.system.hands.max.value})`;
+            }
             sections.unshift(handSection);
         }
 

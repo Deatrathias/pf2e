@@ -29,7 +29,9 @@ class ConsumablePF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extend
     }
 
     override get isUsable(): boolean {
-        const isUsableItemType = this.isIdentified ? true : ["other", "scroll", "spell-gem", "talisman", "toolkit", "wand"].includes(this.category);
+        const isUsableItemType = this.isIdentified
+            ? true
+            : ["other", "scroll", "spell-gem", "talisman", "toolkit", "wand"].includes(this.category);
         return this.isEquipped && isUsableItemType && !!this.parent;
     }
 

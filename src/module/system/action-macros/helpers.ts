@@ -335,7 +335,9 @@ class ActionMacroHelpers {
 
     static #getApplicableEquippedWeapons(actor: ActorPF2e, trait: WeaponTrait): WeaponPF2e<ActorPF2e>[] {
         if (actor.isOfType("character")) {
-            return actor.system.actions.flatMap((s) => (s.ready && (s.item.traits.has(trait) || s.slug === "basic-unarmed") ? s.item : []));
+            return actor.system.actions.flatMap((s) =>
+                s.ready && (s.item.traits.has(trait) || s.slug === "basic-unarmed") ? s.item : [],
+            );
         } else {
             return actor.itemTypes.weapon.filter((w) => w.isEquipped && w.traits.has(trait));
         }

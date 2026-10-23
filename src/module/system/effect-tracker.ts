@@ -120,8 +120,9 @@ export class EffectTracker {
 
         for (const actor of actors) {
             // Remove multiple attack penalty
-            if (actor.multipleAttackPenalty > 0)
+            if (actor.multipleAttackPenalty > 0) {
                 await actor.update({ "system.attributes.multipleAttackPenalty.value": 0 });
+            }
             const expiresNow = actor.itemTypes.effect.filter((e) => e.system.duration.unit === "encounter");
             if (expiresNow.length === 0) continue;
             const deletes = expiresNow.map((e) => e.id);

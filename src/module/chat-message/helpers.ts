@@ -41,7 +41,6 @@ async function createUseActionMessage(
     })();
     if (!craftedItem && isCraftingAction) return null;
 
-
     const speaker = ChatMessagePF2e.getSpeaker({ actor, token });
     const flavor = await fa.handlebars.renderTemplate(`systems/${SYSTEM_ID}/templates/chat/action/flavor.hbs`, {
         action: { title: item.name, glyph: getActionGlyph(actionCost) },

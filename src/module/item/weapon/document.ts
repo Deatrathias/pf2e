@@ -238,14 +238,17 @@ class WeaponPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ph
             return true;
         }
         if (usage.type === "affixed") {
-            if (usage.where.includes("weapon"))
+            if (usage.where.includes("weapon")) {
                 return true;
+            }
 
-            if (usage.where.includes("firearm") && this.group === "firearm")
+            if (usage.where.includes("firearm") && this.group === "firearm") {
                 return true;
+            }
 
-            if (usage.where.includes("crossbow") && this.group === "crossbow")
+            if (usage.where.includes("crossbow") && this.group === "crossbow") {
                 return true;
+            }
         }
 
         return false;

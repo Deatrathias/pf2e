@@ -626,7 +626,7 @@ abstract class CreaturePF2e<
                 heldItem.system.containerId = null;
                 const actorUpdates = createActorGroupUpdate({
                     itemCreates: [heldItem],
-                    itemUpdates: [{_id: item.id, "system.quantity": item.quantity - 1}]
+                    itemUpdates: [{ _id: item.id, "system.quantity": item.quantity - 1 }],
                 });
 
                 await applyActorGroupUpdate(this, actorUpdates);
@@ -637,7 +637,7 @@ abstract class CreaturePF2e<
                     const stack = this.inventory.findStackableItem(subitemData);
                     if (stack) {
                         const actorUpdates = createActorGroupUpdate({
-                            itemUpdates: [{_id: stack.id, "system.quantity": stack.quantity + item.quantity}],
+                            itemUpdates: [{ _id: stack.id, "system.quantity": stack.quantity + item.quantity }],
                             itemDeletes: [item.id],
                         });
 
@@ -805,11 +805,20 @@ abstract class CreaturePF2e<
      * Update Multiple attack penalty
      */
     async updateMAP(value: number, { render }: { render?: boolean } = {}): Promise<void> {
-        if (!this.system.attributes.multipleAttackPenalty)
+        if (!this.system.attributes.multipleAttackPenalty) {
             return;
+        }
 
-        await this.update({ "system.attributes.multipleAttackPenalty.value": 
-            Math.clamp(this.system.attributes.multipleAttackPenalty.value + value, 0, 2) }, { render });
+        await this.update(
+            {
+                "system.attributes.multipleAttackPenalty.value": Math.clamp(
+                    this.system.attributes.multipleAttackPenalty.value + value,
+                    0,
+                    2,
+                ),
+            },
+            { render },
+        );
     }
 
     /**

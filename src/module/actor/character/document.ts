@@ -410,7 +410,7 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
         this.system.hands = {
             max: { value: 2, active: 2 },
             free: { value: 2, really: 2 },
-            used: { value: 0 }
+            used: { value: 0 },
         };
 
         // PC level is never a derived number, so it can be set early
@@ -480,7 +480,12 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
             const handsHeld = item.handsHeld;
             if (!handsHeld) continue;
             reallyHeldCount += handsHeld;
-            if ((item.type !== "shield" || !(item as ShieldPF2e<this>).isBuckler) && !item.system.traits.value.includes("free-hand")) heldCount += handsHeld;
+            if (
+                (item.type !== "shield" || !(item as ShieldPF2e<this>).isBuckler) &&
+                !item.system.traits.value.includes("free-hand")
+            ) {
+                heldCount += handsHeld;
+            }
         }
         this.system.hands.free.value = Math.clamp(maxHands - heldCount, 0, maxHands);
         this.system.hands.free.really = Math.clamp(maxHands - reallyHeldCount, 0, maxHands);
@@ -1493,7 +1498,7 @@ class CharacterPF2e<TParent extends TokenDocumentPF2e | null = TokenDocumentPF2e
                     : signedInteger(action.totalModifier);
             },
             get current(): boolean {
-                return mapIncreases === multipleAttackPenalty
+                return mapIncreases === multipleAttackPenalty;
             },
             roll: async (params: AttackRollParams = {}): Promise<Rolled<CheckRoll> | null> => {
                 params.options ??= [];

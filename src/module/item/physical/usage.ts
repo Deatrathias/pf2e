@@ -50,7 +50,8 @@ interface ImplantedUsage {
     hands?: 0;
 }
 
-type UsageDetails = HeldUsage | WornUsage | AttachedUsage | InstalledUsage | CarriedUsage | ImplantedUsage | AffixedUsage;
+type UsageDetails =
+    HeldUsage | WornUsage | AttachedUsage | InstalledUsage | CarriedUsage | ImplantedUsage | AffixedUsage;
 
 type UsageType = UsageDetails["type"];
 

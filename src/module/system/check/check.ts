@@ -331,8 +331,11 @@ class Check {
         }
 
         // Increase multiple attack penalty
-        if (context.traits?.includes("attack") && context.actor?.isOfType("creature") &&
-            (game.combat?.combatant?.actorId ?? null) === context.actor.id) {
+        if (
+            context.traits?.includes("attack") &&
+            context.actor?.isOfType("creature") &&
+            (game.combat?.combatant?.actorId ?? null) === context.actor.id
+        ) {
             await context.actor.updateMAP(1);
         }
 

@@ -149,7 +149,6 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
             pips.addEventListener("click", (event) => this.actor.updateMAP(event.shiftKey ? 2 : 1));
             pips.addEventListener("contextmenu", (event) => this.actor.updateMAP(event.shiftKey ? -2 : -1));
         }
-
     }
 
     protected override activateClickListener(html: HTMLElement): SheetClickActionHandlers {
@@ -306,7 +305,7 @@ abstract class CreatureSheetPF2e<TActor extends CreaturePF2e> extends ActorSheet
         if (event.shiftKey) {
             if (item.isEquipped) {
                 await this.actor.changeCarryType(item, {
-                    carryType: "worn"
+                    carryType: "worn",
                 });
             } else {
                 const newCarryType = item.system.usage.type === "carried" ? "worn" : item.system.usage.type;

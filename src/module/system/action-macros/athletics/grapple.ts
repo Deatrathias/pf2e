@@ -22,8 +22,9 @@ function grappleCheckContext<ItemType extends ItemPF2e<ActorPF2e>>(
         }
     }
 
-    if (weapon)
+    if (weapon) {
         data.item = weapon as unknown as ItemType;
+    }
     return ActionMacroHelpers.defaultCheckContext(opts, { ...data, modifiers });
 }
 
