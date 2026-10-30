@@ -9,7 +9,7 @@
             "value": 20
         },
         "cost": {
-            "value": ""
+            "value": "one vial of @UUID[Compendium.pf2e.equipment-srd.Item.Holy Water]"
         },
         "counteraction": false,
         "damage": {
@@ -55,7 +55,7 @@
         "range": {
             "value": "500 feet"
         },
-        "requirements": "one vial of holy water",
+        "requirements": "",
         "rules": [],
         "target": {
             "value": ""

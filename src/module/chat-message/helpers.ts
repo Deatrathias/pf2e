@@ -61,11 +61,13 @@ async function createUseActionMessage(
         strike: craftedItem?.isOfType("weapon") ? actor.system.actions?.find((a) => a.item === craftedItem) : null,
     });
     const flags: { [SYSTEM_ID]: ChatMessageFlagsPF2e[SystemId] } = { [SYSTEM_ID]: {} };
-    if (item.system.selfEffect) {
-        flags[SYSTEM_ID].context = { type: "self-effect", item: item.id };
-    } else {
-        flags[SYSTEM_ID].context = { type: "ability-used", options: item.getRollOptions() };
-        flags[SYSTEM_ID].origin = item.getOriginData();
+    if (actionCost !== null) {
+        if (item.system.selfEffect) {
+            flags[SYSTEM_ID].context = { type: "self-effect", item: item.id, actionCost };
+        } else {
+            flags[SYSTEM_ID].context = { type: "ability-used", options: item.getRollOptions(), actionCost };
+            flags[SYSTEM_ID].origin = item.getOriginData();
+        }
     }
 
     // Create the message

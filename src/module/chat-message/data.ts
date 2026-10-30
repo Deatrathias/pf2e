@@ -4,7 +4,7 @@ import type { ChatMessageMode } from "@client/config.d.mts";
 import type { ActorUUID, TokenDocumentUUID } from "@client/documents/_module.d.mts";
 import type { DocumentUUID } from "@client/utils/_module.d.mts";
 import type { ChatMessageFlags } from "@common/documents/chat-message.d.mts";
-import type { SpellSource } from "@item/base/data/index.ts";
+import type { ActionCost, SpellSource } from "@item/base/data/index.ts";
 import type { MagicTradition } from "@item/spell/types.ts";
 import type { EffectAreaShape, ItemType } from "@item/types.ts";
 import type { ZeroToTwo } from "@module/data.ts";
@@ -140,6 +140,7 @@ interface AbilityUsedContextFlag {
     domains?: never;
     options: string[];
     outcome?: never;
+    actionCost?: ActionCost;
 }
 
 interface SelfEffectContextFlag {
@@ -148,6 +149,7 @@ interface SelfEffectContextFlag {
     domains?: never;
     options?: never;
     outcome?: never;
+    actionCost?: ActionCost;
 }
 
 interface DamageTakenContextFlag {
