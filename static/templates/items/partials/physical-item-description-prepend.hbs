@@ -1,0 +1,14 @@
+<p class="item-block-line">
+    {{#if usage}}
+        <span>
+            <strong>{{localize "PF2E.Usage"}}</strong>
+            <span>{{usage}};</span>
+        </span>
+    {{/if}}
+    <span>
+        <strong>{{localize "PF2E.Item.Physical.Bulk.Label"}}</strong>
+        <span>{{bulk}}</span>
+    </span>
+</p>
+
+{{#if showDivider}}<hr class="item-block-divider" />{{/if}}

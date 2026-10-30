@@ -31,9 +31,10 @@ import type {
     PhysicalSystemData,
     Price,
 } from "./data.ts";
-import { Coins, computeLevelRarityPrice, getDefaultEquipStatus, handleHPChange, prepareBulkData } from "./helpers.ts";
+import { Coins, computeLevelRarityPrice, createDescriptionPrepend, getDefaultEquipStatus, handleHPChange, prepareBulkData } from "./helpers.ts";
 import { getUsageDetails, isEquipped } from "./usage.ts";
 import { COIN_DENOMINATIONS } from "./values.ts";
+import { ItemDescriptionData } from "@item/base/data/system.ts";
 
 abstract class PhysicalItemPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends ItemPF2e<TParent> {
     /** The item in which this item is embedded */
@@ -767,6 +768,17 @@ abstract class PhysicalItemPF2e<TParent extends ActorPF2e | null = ActorPF2e | n
             img,
             data: { description: { value: description } },
         };
+    }
+
+    override async getDescriptionData(): Promise<ItemDescriptionData> {
+        const description = await super.getDescriptionData();
+        const prepend = await this.getDescriptionPrepend();
+        description.value = `${prepend}\n${description.value}`;
+        return description;
+    }
+
+    protected async getDescriptionPrepend(): Promise<string> {
+        return await createDescriptionPrepend(this);
     }
 
     override async getChatData(): Promise<RawItemChatData> {

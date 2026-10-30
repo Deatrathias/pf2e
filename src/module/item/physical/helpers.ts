@@ -13,6 +13,7 @@ import { Coins } from "./coins.ts";
 import { BulkData, EquippedData } from "./data.ts";
 import { getMaterialValuationData } from "./materials.ts";
 import { RUNE_DATA, getRuneValuationData } from "./runes.ts";
+import { USAGES } from "@scripts/config/usage.ts";
 
 function computePrice(item: PhysicalItemPF2e): Coins {
     if (item.isOfType("treasure")) return item.price.value;
@@ -365,6 +366,33 @@ function getDefaultEquipStatus(item: PhysicalItemPF2e): EquippedData {
     return equipStatus;
 }
 
+async function createDescriptionPrepend(
+    item: PhysicalItemPF2e
+): Promise<string> {
+    const bulkLabel = (() => {
+        const value = item.system.bulk.value;
+        if (value == 0)
+            return _loc("PF2E.Item.Physical.Bulk.Negligible.ShortLabel");
+        if (value === 0.1) 
+            return _loc("PF2E.Item.Physical.Bulk.Light.ShortLabel");
+        return value.toString();
+    })();
+    const usage = ((): string | null => {
+        const value = item.system.usage.value;
+        return (value in CONFIG.PF2E.usages) ? _loc(CONFIG.PF2E.usages[value as CollectionValue<typeof USAGES>]).toLowerCase() as string : null;
+    })();
+    const templatePath = `systems/${SYSTEM_ID}/templates/items/partials/physical-item-description-prepend.hbs`;
+    const formatArgs = {
+        bulk: bulkLabel,
+        usage,
+        showDivider: !item.traits.has("consumable"),
+    };
+
+    const rendered = await fa.handlebars.renderTemplate(templatePath, formatArgs);
+    
+    return rendered.trim();
+}
+
 /**
  * Transfers credits between actors. This is separated to avoid making it callable API during the first few versions.
  * This does not transfer the entire credstick, that's handled by other calling functions.
@@ -419,5 +447,6 @@ export {
     handleHPChange,
     prepareBulkData,
     sizeItemForActor,
+    createDescriptionPrepend,
     transferCredits,
 };

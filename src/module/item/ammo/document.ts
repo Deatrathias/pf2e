@@ -144,6 +144,10 @@ class AmmoPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Phys
         return this.processChatData(htmlOptions, { ...(await super.getChatData()), traits });
     }
 
+    protected override async getDescriptionPrepend(): Promise<string> {
+        return "";
+    }
+
     protected override async _preCreate(
         data: DeepPartial<this["_source"]>,
         options: foundry.abstract.DatabaseCreateCallbackOptions,
