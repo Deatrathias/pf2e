@@ -31,7 +31,14 @@ import type {
     PhysicalSystemData,
     Price,
 } from "./data.ts";
-import { Coins, computeLevelRarityPrice, createDescriptionPrepend, getDefaultEquipStatus, handleHPChange, prepareBulkData } from "./helpers.ts";
+import {
+    Coins,
+    computeLevelRarityPrice,
+    createDescriptionPrepend,
+    getDefaultEquipStatus,
+    handleHPChange,
+    prepareBulkData,
+} from "./helpers.ts";
 import { getUsageDetails, isEquipped } from "./usage.ts";
 import { COIN_DENOMINATIONS } from "./values.ts";
 import { ItemDescriptionData } from "@item/base/data/system.ts";

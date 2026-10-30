@@ -366,20 +366,22 @@ function getDefaultEquipStatus(item: PhysicalItemPF2e): EquippedData {
     return equipStatus;
 }
 
-async function createDescriptionPrepend(
-    item: PhysicalItemPF2e
-): Promise<string> {
+async function createDescriptionPrepend(item: PhysicalItemPF2e): Promise<string> {
     const bulkLabel = (() => {
         const value = item.system.bulk.value;
-        if (value == 0)
+        if (value === 0) {
             return _loc("PF2E.Item.Physical.Bulk.Negligible.ShortLabel");
-        if (value === 0.1) 
+        }
+        if (value === 0.1) {
             return _loc("PF2E.Item.Physical.Bulk.Light.ShortLabel");
+        }
         return value.toString();
     })();
     const usage = ((): string | null => {
         const value = item.system.usage.value;
-        return (value in CONFIG.PF2E.usages) ? _loc(CONFIG.PF2E.usages[value as CollectionValue<typeof USAGES>]).toLowerCase() as string : null;
+        return value in CONFIG.PF2E.usages
+            ? (_loc(CONFIG.PF2E.usages[value as CollectionValue<typeof USAGES>]).toLowerCase() as string)
+            : null;
     })();
     const templatePath = `systems/${SYSTEM_ID}/templates/items/partials/physical-item-description-prepend.hbs`;
     const formatArgs = {
@@ -389,7 +391,7 @@ async function createDescriptionPrepend(
     };
 
     const rendered = await fa.handlebars.renderTemplate(templatePath, formatArgs);
-    
+
     return rendered.trim();
 }
 
