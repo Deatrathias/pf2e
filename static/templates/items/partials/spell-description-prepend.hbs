@@ -1,4 +1,5 @@
 {{#if traditions}}<p><strong>{{localize "PF2E.SpellTraditionsLabel"}}</strong> {{traditions}}</p>{{/if}}
+{{#if requirements}}<p><strong>{{localize "PF2E.SpellRequirementsLabel"}}</strong> {{requirements}}</p>{{/if}}
 {{#if (or cast cost secondaryCasters)}}
     <p class="item-block-line">
         {{#if cast}}
@@ -83,4 +84,4 @@
     </p>
 {{/if}}
 
-{{#if (or traditions cast cost secondaryCasters primaryCheck secondaryChecks range targets area defense duration)}}<hr class="item-block-divider" />{{/if}}
+{{#if (or traditions requirements cast cost secondaryCasters primaryCheck secondaryChecks range targets area defense duration)}}<hr class="item-block-divider" />{{/if}}

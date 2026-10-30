@@ -58,6 +58,7 @@ async function createDescriptionPrepend(
     const templatePath = `systems/${SYSTEM_ID}/templates/items/partials/spell-description-prepend.hbs`;
     const formatArgs = {
         traditions,
+        requirements: spell.system.requirements.trim() || null,
         cast: spell.actionGlyph ? null : spell.system.time.value || null,
         cost: spell.system.cost.value?.trim() || null,
         secondaryCasters: spell.system.ritual?.secondary.casters || null,
