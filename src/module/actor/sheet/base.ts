@@ -24,7 +24,6 @@ import {
     createSheetTags,
     eventToMessageMode,
     eventToRollParams,
-    isControlDown,
     maintainFocusInRender,
 } from "@module/sheet/helpers.ts";
 import { DamageRoll } from "@system/damage/roll.ts";
@@ -755,7 +754,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
             },
             "detach-subitem": async (event) => {
                 const subitem = await inventoryItemFromDOM(event);
-                return subitem.detach({ skipConfirm: isControlDown(event) });
+                return subitem.detach({ skipConfirm: event.shiftKey });
             },
             "increase-credits": async (event) => {
                 const item = await inventoryItemFromDOM(event);
@@ -787,7 +786,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
                     }
                 };
 
-                if (event.ctrlKey) return sellItem();
+                if (event.shiftKey) return sellItem();
 
                 const content = document.createElement("p");
                 content.textContent = _loc("PF2E.SellItemQuestion", { item: item.name });
@@ -972,7 +971,7 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
     }
 
     protected deleteItem<TItem extends ItemPF2e>(item: TItem, event?: PointerEvent): Promise<TItem | undefined> {
-        return event?.ctrlKey || event?.shiftKey ? item.delete() : item.deleteDialog();
+        return event?.shiftKey ? item.delete() : item.deleteDialog();
     }
 
     #onClickBrowseAbilities(anchor: HTMLElement): void {
@@ -1082,7 +1081,8 @@ abstract class ActorSheetPF2e<TActor extends ActorPF2e> extends fav1.sheets.Acto
             }
 
             // ... a roll-option toggle?
-            const label = previewElement?.innerText.trim();
+            // Use the label span so suboption select text is excluded
+            const label = previewElement?.querySelector("label > span")?.textContent.trim();
             const rollOptionData = previewElement?.dataset ?? {};
             if (item && label && rollOptionData.domain && rollOptionData.option) {
                 return {
