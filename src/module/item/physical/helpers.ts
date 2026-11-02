@@ -378,7 +378,9 @@ async function createDescriptionPrepend(item: PhysicalItemPF2e): Promise<string>
         return value.toString();
     })();
     const usage = ((): string | null => {
-        const value = item.system.usage.value;
+        const twoHands =
+            item.isOfType("weapon") && item.hands === "1" && !!item.traits.find((t) => t.startsWith("two-hand"));
+        const value = twoHands ? "held-in-one-or-two-hands" : item.system.usage.value;
         return value in CONFIG.PF2E.usages
             ? (_loc(CONFIG.PF2E.usages[value as CollectionValue<typeof USAGES>]).toLowerCase() as string)
             : null;
