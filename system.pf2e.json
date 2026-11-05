@@ -3,10 +3,10 @@
     "type": "system",
     "title": "Pathfinder Second Edition",
     "description": "A community contributed game system for Pathfinder Second Edition",
-    "version": "8.6.1-deat1",
+    "version": "8.7.0-deat1",
     "license": "./LICENSE",
     "manifest": "https://raw.githubusercontent.com/Deatrathias/pf2e/v14-dev/system.pf2e.json",
-    "download": "https://github.com/Deatrathias/pf2e/releases/download/pf2e-8.6.1-deat1/system.zip",
+    "download": "https://github.com/Deatrathias/pf2e/releases/download/pf2e-8.7.0-deat1/system.zip",
     "changelog": "https://raw.githubusercontent.com/Deatrathias/pf2e/refs/heads/v14-dev/CHANGELOG.md",
     "url": "https://github.com/Deatrathias/pf2e",
     "bugs": "https://github.com/Deatrathias/pf2e/issues",
@@ -15,7 +15,7 @@
     "primaryTokenAttribute": "attributes.hp",
     "compatibility": {
         "minimum": "14.361",
-        "verified": "14.369",
+        "verified": "14.370",
         "maximum": "14"
     },
     "authors": [
@@ -970,6 +970,19 @@
             "flags": {}
         },
         {
+            "name": "feybound-bestiary",
+            "label": "Feybound",
+            "path": "packs/feybound-bestiary",
+            "type": "Actor",
+            "banner": "systems/pf2e/assets/compendium-banner/red.webp",
+            "system": "pf2e",
+            "ownership": {
+                "PLAYER": "OBSERVER",
+                "ASSISTANT": "OWNER"
+            },
+            "flags": {}
+        },
+        {
             "name": "vehicles",
             "label": "Vehicles",
             "path": "packs/vehicles",
@@ -1446,10 +1459,11 @@
                         "battlecry-bestiary",
                         "pathfinder-dark-archive",
                         "book-of-the-dead-bestiary",
-                        "rage-of-elements-bestiary",
+                        "feybound-bestiary",
                         "hazards",
                         "howl-of-the-wild-bestiary",
                         "lost-omens-bestiary",
+                        "rage-of-elements-bestiary",
                         "war-of-immortals-bestiary",
                         "npc-gallery",
                         "vehicles",

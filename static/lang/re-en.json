@@ -209,6 +209,7 @@
                 "Leg": "Leg",
                 "LightningLash": "Lightning Lash",
                 "LittleClaw": "Little Claw",
+                "LurkerClaw": "Lurker Claw",
                 "Mandibles": "Mandibles",
                 "MetalShard": "Metal Shard",
                 "Moonbeam": "Moonbeam",
@@ -216,6 +217,7 @@
                 "PhasicBlade": "Phasic Blade",
                 "PiercingHymn": "Piercing Hymn",
                 "Pincer": "Pincer",
+                "PricklyVine": "Prickly Vine",
                 "Pseudopod": "Pseudopod",
                 "Proboscis": "Proboscis",
                 "ProjectileVomit": "Projectile Vomit",
@@ -967,6 +969,7 @@
                 "PersistentAcid": "persistent acid",
                 "PersistentFire": "persistent fire",
                 "PersistentPoison": "persistent poison",
+                "PersistentWassailing": "persistent wassailing",
                 "PhysicalRangedAttacks": "physical ranged attacks",
                 "PhysicalWeaponsOnly": "physical (weapons only)",
                 "PrimalSpells": "primal spells",
@@ -1262,7 +1265,10 @@
                             "Raven": "Raven",
                             "Scorpion": "Scorpion",
                             "Shark": "Shark",
+                            "Snake": "Snake",
                             "Spider": "Spider",
+                            "Squirrel": "Squirrel",
+                            "SquirrelFlyingGiant": "Flying Giant Squirrel",
                             "Tiger": "Tiger",
                             "Toad": "Toad",
                             "Wolf": "Wolf",
@@ -1324,6 +1330,11 @@
                             "Elemental": "Wood Elemental",
                             "Medium": "Medium Wood Elemental",
                             "Small": "Small Wood Elemental"
+                        }
+                    },
+                    "Fey": {
+                        "Ujdavipr": {
+                            "Scout": "Scout"
                         }
                     },
                     "Genie": {
@@ -2584,6 +2595,14 @@
                 "SingleAttackLabel": "Telekinetic Storm — Single Target",
                 "SingleTarget": "Single Target"
             },
+            "Poludnica": {
+                "NoondayDemon": {
+                    "CompleteDarkness": "In Complete Darkness"
+                },
+                "SunstrokeHaze": {
+                    "Zenith": "Sun is at its zenith"
+                }
+            },
             "Protean": {
                 "ProteanAnatomy": {
                     "Name": "Protean Anatomy"
@@ -2805,6 +2824,11 @@
                 },
                 "TagTeam": {
                     "Name": "Tag Team"
+                }
+            },
+            "SedacthyWarband": {
+                "FrenziedFeast": {
+                    "Label": "Frenzied Feast — Number of Enemies Damaged"
                 }
             },
             "Seugathi": {
@@ -6232,6 +6256,9 @@
                 "Fetters": {
                     "Note": "You must succeed at a @Check[flat|dc:11|name:Fetters|showDC:all] any time you use a manipulate action or else that action fails."
                 },
+                "FiendishTeleportation": {
+                    "RollOptionLabel": "Fiendish Teleportation — Defending against a reaction triggered by your movement"
+                },
                 "FightersFork": {
                     "FluidLengthLabel": "Fighter's Fork — Fluid Length"
                 },
@@ -7695,6 +7722,7 @@
                 "HandCrossbowGauntletBow": "Hand Crossbow & Gauntlet Bow",
                 "HellknightBreastplate": "Hellknight Breastplate",
                 "HellknightPlates": "Hellknight Half-Plate & Hellknight Plate",
+                "Grenades": "Grenades",
                 "MarineCombat": "Marine Combat",
                 "MartialAthamaruWeapons": "Martial Athamaru Weapons",
                 "MartialAzarketiWeapons": "Martial Azarketi Weapons",
