@@ -47,7 +47,7 @@ import {
     DamageKind,
     SpellDamageTemplate,
 } from "@system/damage/types.ts";
-import { DEGREE_OF_SUCCESS_STRINGS } from "@system/degree-of-success.ts";
+import { DEGREE_OF_SUCCESS, DEGREE_OF_SUCCESS_STRINGS, DegreeOfSuccessString } from "@system/degree-of-success.ts";
 import { StatisticRollParameters } from "@system/statistic/index.ts";
 import { type EnrichmentOptionsPF2e, type RollDataPF2e, TextEditorPF2e } from "@system/text-editor.ts";
 import {
@@ -273,7 +273,10 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
         return rollData;
     }
 
-    async getDamage(params: SpellDamageOptions = { skipDialog: true }): Promise<SpellDamage | null> {
+    async getDamage(
+        params: SpellDamageOptions = { skipDialog: true },
+        outcome?: DegreeOfSuccessString | null,
+    ): Promise<SpellDamage | null> {
         // Return early if the spell doesn't deal damage
         const { actor, spellcasting } = this;
         if (Object.keys(this.system.damage).length === 0 || !actor || !spellcasting?.statistic) {
@@ -346,7 +349,7 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
             domains,
             options: actionAndTraitOptions,
             checkContext: null,
-            outcome: null,
+            outcome: outcome ?? null,
             traits: spellTraits,
             viewOnly: !isAttack || !params.target,
         }).resolve();
@@ -355,7 +358,7 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
         const context: DamageDamageContext = {
             type: "damage-roll",
             sourceType: isAttack ? "attack" : "save",
-            outcome: isAttack ? "success" : null, // we'll need to support other outcomes later
+            outcome: isAttack ? outcome : null,
             domains,
             options: contextData.options,
             self: contextData.origin,
@@ -433,9 +436,20 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
             if (!rolled) return null;
         }
 
-        const { formula, breakdown } = createDamageFormula(formulaData);
+        const degreeOfSuccess = outcome ? (DEGREE_OF_SUCCESS_STRINGS.indexOf(outcome) as ZeroToThree) : null;
+        const { formula, breakdown } = createDamageFormula(formulaData, degreeOfSuccess ?? undefined) ?? {
+            formula: "0",
+            breakdown: ["0"],
+        };
         const showBreakdown = game.pf2e.settings.metagame.breakdowns || !!context.self?.actor?.hasPlayerOwner;
-        const roll = new DamageRoll(formula, {}, { showBreakdown });
+
+        const critRule =
+            degreeOfSuccess !== DEGREE_OF_SUCCESS.CRITICAL_SUCCESS
+                ? null
+                : game.settings.get(SYSTEM_ID, "critRule") === "doubledamage"
+                  ? "double-damage"
+                  : "double-dice";
+        const roll = new DamageRoll(formula, {}, { showBreakdown, degreeOfSuccess, critRule });
 
         const template: SpellDamageTemplate = {
             name: this.name,
@@ -967,6 +981,7 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
         this: SpellPF2e<ActorPF2e>,
         event: PointerEvent,
         mapIncreases?: ZeroToTwo,
+        outcome?: DegreeOfSuccessString | null,
     ): Promise<Rolled<DamageRoll> | null> {
         const element = htmlClosest(event.target, "[data-cast-rank]");
         const castRank = Number(element?.dataset.castRank) || this.rank;
@@ -980,10 +995,13 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
         const targetToken =
             Array.from(game.user.targets).find((t) => t.actor?.isOfType("creature", "hazard", "vehicle"))?.document ??
             null;
-        const spellDamage = await this.getDamage({
-            target: targetToken,
-            ...eventToRollParams(event, { type: "damage" }),
-        });
+        const spellDamage = await this.getDamage(
+            {
+                target: targetToken,
+                ...eventToRollParams(event, { type: "damage" }),
+            },
+            outcome,
+        );
         if (!spellDamage) return null;
 
         const { template, context } = spellDamage;
@@ -993,6 +1011,8 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
             context.mapIncreases = mapIncreases;
             context.options.add(`map:increases:${mapIncreases}`);
         }
+
+        context.outcome = outcome;
 
         return DamagePF2e.roll(template, context);
     }

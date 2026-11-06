@@ -44,6 +44,9 @@
                     {{#if data.hasDamage}}
                         <div class="spell-button">
                             <button type="button" data-action="spell-damage" data-visibility="owner">{{localize data.damageLabel}}</button>
+                            {{#if data.check}}
+                                <button type="button" data-action="spell-damage" data-outcome="critical-success" data-visibility="owner">{{localize "PF2E.CriticalDamageLabel"}}</button>
+                            {{/if}}
                         </div>
                     {{/if}}
                     {{#if data.counteraction}}

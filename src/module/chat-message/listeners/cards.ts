@@ -107,9 +107,16 @@ class ChatCards {
                 case "spell-attack":
                     await spell?.rollAttack(event);
                     return;
-                case "spell-damage":
-                    spell?.rollDamage(event);
+                case "spell-damage": {
+                    const method =
+                        button.dataset.outcome !== "critical-success"
+                            ? spell?.isAttack
+                                ? "success"
+                                : null
+                            : "criticalSuccess";
+                    spell?.rollDamage(event, undefined, method);
                     return;
+                }
                 case "spell-save": {
                     const saveType = button.dataset.save;
                     const dcValue = Number(button.dataset.dc ?? "NaN");
