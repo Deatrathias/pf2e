@@ -554,6 +554,48 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
         return variant;
     }
 
+    async selectVariant(castRank?: number): Promise<SpellPF2e | null> {
+        if (!this.hasVariants) {
+            return this;
+        }
+
+        const overrideVariants = this.overlays.overrideVariants.sort((a, b) => a.sort - b.sort);
+
+        const content = overrideVariants
+            .map(
+                (variant, index) =>
+                    `<label><input type="radio" name="selected" value="${variant.appliedOverlays?.values().toArray().join(",")}" ${index === 0 ? "checked" : ""}></input><span>${variant.name}</span> <span class="action-glyph">${variant.actionGlyph ?? ""}</span></label>`,
+            )
+            .join("");
+
+        const selectedVariant = await foundry.applications.api.DialogV2.wait({
+            id: "select-spell-variant-{id}",
+            classes: ["column-buttons"],
+            window: { title: "PF2E.Item.Spell.Variants.SelectVariantLabel" },
+            content,
+            buttons: [
+                {
+                    action: "confirm",
+                    label: "PF2E.OK",
+                    default: true,
+                    callback: (_: PointerEvent | SubmitEvent, button: HTMLButtonElement) => {
+                        const element = button.form?.elements.namedItem("selected");
+                        const selection =
+                            element && fu.isElementInstanceOf(element, RadioNodeList) ? element.value : null;
+                        return selection;
+                    },
+                },
+            ],
+            rejectClose: false,
+        });
+
+        if (!selectedVariant || typeof selectedVariant !== "string") {
+            return this;
+        }
+        const overlayIds = selectedVariant.split(",");
+        return this.loadVariant({ castRank, overlayIds });
+    }
+
     getHeightenLayers(rank?: number): SpellHeightenLayer[] {
         const heightening = this.system.heightening;
         if (heightening?.type !== "fixed") return [];
@@ -799,7 +841,7 @@ class SpellPF2e<TParent extends ActorPF2e | null = ActorPF2e | null> extends Ite
                 tradition,
             };
             if (this.parentItem) {
-                flags.casting.embeddedSpell = this.toObject();
+                flags.casting.embeddedSpell = (this.original ?? this).toObject();
             }
 
             // The only data that can possibly exist in a casted spell is the dc, so we pull that data.
