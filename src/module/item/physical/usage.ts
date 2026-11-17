@@ -94,7 +94,6 @@ function getUsageDetails(usage: string): UsageDetails {
     }
 
     // Usages outside the config: weapon hand counts and any added by modules
-    if (usage === "held-in-one-plus-hands") return { value: usage, type: "held", hands: 1 };
     if (usage.startsWith("attached-to")) {
         return { value: usage, type: "attached", where: usage.replace(/^attached-to-/, "") };
     }
@@ -104,11 +103,6 @@ function getUsageDetails(usage: string): UsageDetails {
     const where = usage.substring(4);
     if (usage.startsWith("worn") && setHasElement(WORN_SLOTS, where)) {
         return { value: usage, type: "worn", where };
-    }
-
-    if (usage.startsWith("affixed-to")) {
-        const where = usage.replace(/^affixed-to-/, "");
-        return { value: usage, type: "affixed", where };
     }
 
     if (BUILD_MODE === "development" && !(usage in CONFIG.PF2E.usages)) {
